@@ -1,0 +1,121 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "sales": "Sales",
+    "purchases": "Purchases",
+    "banking": "Banking",
+    "inventory": "Inventory",
+    "accounting": "Accounting",
+    "reports": "Reports",
+    "ai": "AI Insights",
+    "settings": "Settings",
+    "companies": "Companies",
+    "customers": "Customers",
+    "vendors": "Vendors",
+    "invoices": "Invoices",
+    "bills": "Bills",
+    "transactions": "Transactions",
+    "products": "Products"
+  },
+  "dashboard": {
+    "title": "UrutiIQ Dashboard",
+    "subtitle": "AI-powered accounting insights for your business",
+    "quickAdd": "Quick Add",
+    "recentTransactions": "Recent Transactions",
+    "financialMetrics": "Financial Metrics",
+    "aiInsights": "AI Insights",
+    "clientOverview": "Client Overview"
+  },
+  "ai": {
+    "insights": "AI Insights",
+    "predictions": "Predictions",
+    "anomalies": "Anomalies",
+    "recommendations": "Recommendations",
+    "generate": "Generate",
+    "detect": "Detect",
+    "analyze": "Analyze"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember Me"
+  },
+  "company": {
+    "name": "Company Name",
+    "industry": "Industry",
+    "taxId": "Tax ID",
+    "country": "Country",
+    "currency": "Currency",
+    "fiscalYearStart": "Fiscal Year Start",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email"
+  },
+  "invoice": {
+    "number": "Invoice Number",
+    "customer": "Customer",
+    "issueDate": "Issue Date",
+    "dueDate": "Due Date",
+    "amount": "Amount",
+    "status": "Status",
+    "balance": "Balance Due",
+    "create": "Create Invoice",
+    "edit": "Edit Invoice",
+    "post": "Post Invoice"
+  },
+  "bill": {
+    "number": "Bill Number",
+    "vendor": "Vendor",
+    "billDate": "Bill Date",
+    "dueDate": "Due Date",
+    "amount": "Amount",
+    "status": "Status",
+    "balance": "Balance Due",
+    "create": "Create Bill",
+    "edit": "Edit Bill",
+    "post": "Post Bill"
+  },
+  "status": {
+    "draft": "Draft",
+    "posted": "Posted",
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "cancelled": "Cancelled"
+  },
+  "actions": {
+    "createInvoice": "Create Invoice",
+    "createBill": "Create Bill",
+    "addCompany": "Add Company",
+    "addCustomer": "Add Customer",
+    "addVendor": "Add Vendor",
+    "addProduct": "Add Product",
+    "recordPayment": "Record Payment",
+    "reconcile": "Reconcile"
+  }
+}

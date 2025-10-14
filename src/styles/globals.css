@@ -1,0 +1,539 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Font optimization for slow networks - Using system fonts */
+
+/* Fallback font stack for slow networks */
+@font-face {
+  font-family: 'System Fallback';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('system-ui'), local('-apple-system'), local('BlinkMacSystemFont'), local('Segoe UI'), local('Roboto'), local('Oxygen'), local('Ubuntu'), local('Cantarell'), local('Fira Sans'), local('Droid Sans'), local('Helvetica Neue'), local('sans-serif');
+}
+
+:root {
+  /* Updated color tokens to match UrutiIQ design brief with cyan primary and professional neutrals */
+  --background: 0 0% 100%; /* #ffffff - Clean white background */
+  --foreground: 215 16% 47%; /* #4b5563 - Professional dark gray text */
+  --card: 210 40% 98%; /* #f9fafb - Soft light gray for cards */
+  --card-foreground: 215 16% 47%; /* #4b5563 - Card text color */
+  --popover: 0 0% 100%; /* #ffffff - Popover background */
+  --popover-foreground: 215 16% 47%; /* #4b5563 - Popover text */
+  --primary: 188 100% 42%; /* #0891b2 - Cyan primary for trust and innovation */
+  --primary-foreground: 0 0% 100%; /* #ffffff - White text on primary */
+  --secondary: 239 84% 67%; /* #6366f1 - Soft blue accent */
+  --secondary-foreground: 0 0% 100%; /* #ffffff - White text on secondary */
+  --muted: 210 40% 98%; /* #f9fafb - Muted background */
+  --muted-foreground: 215 16% 47%; /* #4b5563 - Muted text */
+  --accent: 239 84% 67%; /* #6366f1 - Interactive accent color */
+  --accent-foreground: 0 0% 100%; /* #ffffff - Accent text */
+  --destructive: 0 84% 60%; /* #dc2626 - Error red */
+  --destructive-foreground: 0 0% 100%; /* #ffffff - White text on destructive */
+  --border: 220 13% 91%; /* #e5e7eb - Light border */
+  --input: 210 40% 98%; /* #f9fafb - Input background */
+  --ring: 188 100% 42%; /* Cyan focus ring */
+  --chart-1: 188 100% 42%; /* #0891b2 - Primary chart color */
+  --chart-2: 239 84% 67%; /* #6366f1 - Secondary chart color */
+  --chart-3: 0 84% 60%; /* #dc2626 - Error/warning chart color */
+  --chart-4: 43 96% 56%; /* #f59e0b - Warning/amber chart color */
+  --chart-5: 215 16% 47%; /* #4b5563 - Neutral chart color */
+  --radius: 0.5rem; /* Standard border radius */
+  --sidebar: 210 40% 98%; /* #f9fafb - Sidebar background */
+  --sidebar-foreground: 215 16% 47%; /* #4b5563 - Sidebar text */
+  --sidebar-primary: 0 0% 100%; /* #ffffff - Primary sidebar items */
+  --sidebar-primary-foreground: 215 16% 47%; /* #4b5563 - Primary sidebar text */
+  --sidebar-accent: 239 84% 67%; /* #6366f1 - Sidebar accent */
+  --sidebar-accent-foreground: 0 0% 100%; /* #ffffff - Sidebar accent text */
+  --sidebar-border: 220 13% 91%; /* #e5e7eb - Sidebar border */
+  --sidebar-ring: 188 100% 42%; /* Cyan focus ring for sidebar */
+}
+
+.dark {
+  /* Updated dark mode tokens to maintain professional appearance with proper contrast */
+  --background: 224 71% 4%; /* Very dark background */
+  --foreground: 213 31% 91%; /* Light text */
+  --card: 224 71% 4%; /* Dark card background */
+  --card-foreground: 213 31% 91%; /* Light card text */
+  --popover: 224 71% 4%; /* Dark popover */
+  --popover-foreground: 213 31% 91%; /* Light popover text */
+  --primary: 188 100% 42%; /* #0891b2 - Maintain cyan primary in dark mode */
+  --primary-foreground: 224 71% 4%; /* Dark text on primary */
+  --secondary: 239 84% 67%; /* #6366f1 - Maintain secondary blue */
+  --secondary-foreground: 213 31% 91%; /* Light text on secondary */
+  --muted: 223 47% 11%; /* Dark muted background */
+  --muted-foreground: 215.4 16.3% 56.9%; /* Medium gray text */
+  --accent: 223 47% 11%; /* Dark accent background */
+  --accent-foreground: 213 31% 91%; /* Light accent text */
+  --destructive: 0 63% 31%; /* Darker destructive color */
+  --destructive-foreground: 213 31% 91%; /* Light text on destructive */
+  --border: 223 47% 11%; /* Dark border */
+  --input: 223 47% 11%; /* Dark input background */
+  --ring: 188 100% 42%; /* Maintain cyan focus ring */
+  --chart-1: 188 100% 42%; /* #0891b2 - Primary chart color */
+  --chart-2: 239 84% 67%; /* #6366f1 - Secondary chart color */
+  --chart-3: 0 63% 31%; /* Darker error/warning chart color */
+  --chart-4: 43 96% 56%; /* #f59e0b - Warning/amber chart color */
+  --chart-5: 215.4 16.3% 56.9%; /* Light neutral chart color */
+  --sidebar: 224 71% 4%; /* Dark sidebar background */
+  --sidebar-foreground: 213 31% 91%; /* Light sidebar text */
+  --sidebar-primary: 188 100% 42%; /* Cyan primary sidebar items */
+  --sidebar-primary-foreground: 224 71% 4%; /* Dark text on primary sidebar */
+  --sidebar-accent: 223 47% 11%; /* Dark sidebar accent */
+  --sidebar-accent-foreground: 213 31% 91%; /* Light sidebar accent text */
+  --sidebar-border: 223 47% 11%; /* Dark sidebar border */
+  --sidebar-ring: 188 100% 42%; /* Cyan focus ring for sidebar */
+}
+
+
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  font-family: 'System Fallback', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-feature-settings: 'rlig' 1, 'calt' 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Font loading optimization */
+.font-sans {
+  font-family: 'System Fallback', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-display: swap;
+}
+
+/* Performance optimizations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Loading states for slow networks */
+.loading {
+  opacity: 0.7;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.loaded {
+  opacity: 1;
+}
+
+/* Critical CSS for above-the-fold content */
+.critical {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+
+/* Optimize images for slow networks */
+img {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 300px;
+}
+
+/* Reduce layout shift during font loading */
+.font-loading {
+  font-family: 'System Fallback', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+.font-loaded {
+  font-family: 'System Fallback', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Enhanced card border variants */
+.card-border-subtle {
+  border-color: var(--border-subtle);
+  border-width: 1px;
+}
+
+.card-border-medium {
+  border-color: var(--border-medium);
+  border-width: 1px;
+}
+
+.card-border-strong {
+  border-color: var(--border-strong);
+  border-width: 1.5px;
+}
+
+.card-border-primary {
+  border-color: var(--border-primary);
+  border-width: 1.5px;
+}
+
+.card-border-secondary {
+  border-color: var(--border-secondary);
+  border-width: 1.5px;
+}
+
+.card-border-success {
+  border-color: var(--border-success);
+  border-width: 1.5px;
+}
+
+.card-border-warning {
+  border-color: var(--border-warning);
+  border-width: 1.5px;
+}
+
+.card-border-error {
+  border-color: var(--border-error);
+  border-width: 1.5px;
+}
+
+/* Card hover effects */
+.card-hover-lift {
+  transition: all 0.2s ease-in-out;
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.card-hover-glow {
+  transition: all 0.2s ease-in-out;
+}
+
+.card-hover-glow:hover {
+  box-shadow: 0 0 0 1px var(--border-primary), 0 4px 12px rgba(8, 145, 178, 0.15);
+}
+
+/* Custom scrollbar styles for sidebar */
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) rgba(156, 163, 99, 0.2);
+  /* Force scrollbar to always show */
+  overflow-y: scroll !important;
+  /* Ensure minimum height for scrolling */
+  min-height: 400px;
+  max-height: calc(100vh - 200px);
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  /* Always show scrollbar */
+  -webkit-appearance: none;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: rgba(156, 163, 175, 0.1);
+  border-radius: 4px;
+  margin: 2px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  border: 1px solid rgba(156, 163, 175, 0.1);
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.6);
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Dark mode scrollbar */
+.dark .sidebar-scrollbar {
+  scrollbar-color: rgba(75, 85, 99, 0.5) rgba(75, 85, 99, 0.2);
+}
+
+.dark .sidebar-scrollbar::-webkit-scrollbar-track {
+  background: rgba(75, 85, 99, 0.1);
+}
+
+.dark .sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.4);
+  border: 1px solid rgba(75, 85, 99, 0.1);
+}
+
+.dark .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.6);
+}
+
+/* AI Component Specific Styles */
+.ai-dashboard {
+  background: linear-gradient(135deg, var(--background) 0%, var(--card) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ai-insight-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: all 0.2s ease-in-out;
+}
+
+.ai-insight-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Voice Recording Styles */
+.voice-recording {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.voice-recording:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(8, 145, 178, 0.3);
+}
+
+.voice-recording.recording {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(8, 145, 178, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(8, 145, 178, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(8, 145, 178, 0);
+  }
+}
+
+/* Gamification Styles */
+.achievement-badge {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: var(--primary-foreground);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.achievement-badge:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(8, 145, 178, 0.4);
+}
+
+.progress-bar {
+  background: var(--muted);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Analytics Dashboard Styles */
+.analytics-widget {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.analytics-widget:hover {
+  border-color: var(--border-primary);
+  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.1);
+}
+
+.metric-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.2s ease-in-out;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced Form Styles */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--input);
+  color: var(--foreground);
+  transition: all 0.2s ease-in-out;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--border-primary);
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+}
+
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.btn-primary:hover {
+  background: oklch(0.5 0.15 200);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.2);
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.btn-secondary:hover {
+  background: oklch(0.57 0.18 264);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.btn-outline:hover {
+  background: var(--muted);
+  border-color: var(--border-medium);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--foreground);
+}
+
+.btn-ghost:hover {
+  background: var(--muted);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+}
+
+/* Status Indicators */
+.status-success {
+  color: var(--border-success);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--border-success);
+  border-radius: var(--radius);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-warning {
+  color: var(--border-warning);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid var(--border-warning);
+  border-radius: var(--radius);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-error {
+  color: var(--border-error);
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid var(--border-error);
+  border-radius: var(--radius);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-info {
+  color: var(--border-primary);
+  background: rgba(8, 145, 178, 0.1);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .analytics-widget {
+    padding: 1rem;
+  }
+  
+  .metric-card {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .form-input {
+    padding: 0.5rem;
+  }
+}

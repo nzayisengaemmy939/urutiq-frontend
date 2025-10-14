@@ -1,0 +1,610 @@
+import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { useNavigate } from "react-router-dom"
+import { apiService } from "../lib/api"
+import { config } from "../lib/config"
+
+// ---- Helpers ---- //
+function base64UrlDecode(base64Url: string): string {
+  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
+  const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=")
+
+  if (typeof window === "undefined") {
+    return Buffer.from(padded, "base64").toString("utf-8")
+  }
+  return atob(padded)
+}
+
+function parseJwt<T = any>(token: string): T | null {
+  try {
+    const [, payload] = token.split(".")
+    return JSON.parse(base64UrlDecode(payload))
+  } catch {
+    return null
+  }
+}
+
+function isTokenExpired(token: string, bufferMinutes: number = 5): boolean {
+  const payload = parseJwt<JwtPayload>(token)
+  if (!payload?.exp) return true
+  
+  const now = Date.now() / 1000
+  return (payload.exp - now) < (bufferMinutes * 60)
+}
+
+// ---- Types ---- //
+interface JwtPayload {
+  sub: string
+  roles?: string[]
+  tenantId: string
+  exp?: number
+  [key: string]: any
+}
+
+interface User {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  companyName: string
+  role: "admin" | "accountant" | "auditor" | "employee"
+  isEmailVerified: boolean
+  createdAt: string
+  tenantId: string
+}
+
+interface RegisterData {
+  firstName: string
+  lastName: string
+  email: string
+  companyName: string
+  phone: string
+  password: string
+}
+
+interface AuthContextType {
+  user: User | null
+  isLoading: boolean
+  isAuthenticated: boolean
+  isRefreshing: boolean
+  login: (email: string, password: string) => Promise<void>
+  loginWithDemo: (sub: string, roles?: string[]) => Promise<void>
+  register: (userData: RegisterData) => Promise<void>
+  logout: () => Promise<void>
+  updateUser: (userData: Partial<User>) => Promise<void>
+  refreshTokens: () => Promise<boolean>
+  ensureValidToken: () => Promise<boolean>
+  handleAuthError: () => Promise<boolean>
+  clearAllData: () => void
+}
+
+// ---- Context ---- //
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const qc = useQueryClient()
+  const navigate = useNavigate()
+
+  // Only log after mounting to prevent SSR issues
+  useEffect(() => {
+    if (mounted) {
+      console.log("🔐 AuthProvider: Component mounted and ready")
+    }
+  }, [mounted])
+
+  // Ensure a company id is present in storage after login/refresh
+  const ensureCompanyId = async (payload?: JwtPayload) => {
+    try {
+      const existingCompanyId = localStorage.getItem("company_id") || 
+                              localStorage.getItem("companyId") || 
+                              localStorage.getItem("company");
+      const existingCompanyName = localStorage.getItem("company_name");
+      
+      // If we already have both, no need to do anything
+      if (existingCompanyId && existingCompanyName) {
+        return;
+      }
+
+      // If we have company info in the JWT, use it
+      if (payload?.companyId) {
+        localStorage.setItem("company_id", payload.companyId);
+        if (payload.companyName) {
+          localStorage.setItem("company_name", payload.companyName);
+        }
+        return;
+      }
+
+      // Wait a bit to ensure auth headers are properly set
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Try to fetch first company for this tenant
+      const companies = await apiService.getCompanies({ page: 1, pageSize: 1 });
+      const companyList = Array.isArray(companies?.data) 
+        ? companies.data 
+        : (Array.isArray(companies) ? companies : []);
+      
+      const first = companyList[0];
+      if (first?.id) {
+        // If there is only one company returned (or none selected yet), enforce it as the active company
+        const isDemo = existingCompanyId === config.demo.companyId;
+        if (!existingCompanyId || companyList.length === 1 || existingCompanyId !== first.id || isDemo) {
+          localStorage.setItem("company_id", first.id);
+          if (first.name) {
+            localStorage.setItem("company_name", first.name);
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Failed to ensure company ID:', error);
+      // Preserve existing selection if any
+    }
+  }
+
+  // ---- Token Refresh ---- //
+  const refreshTokens = async (): Promise<boolean> => {
+    // Only run on client side
+    if (typeof window === "undefined") {
+      return false
+    }
+
+    if (isRefreshing) {
+      // Prevent multiple simultaneous refresh attempts
+      return false
+    }
+
+    const rt = localStorage.getItem("refresh_token")
+    const tenantId = localStorage.getItem("tenant_id")
+    
+    if (!rt || !tenantId) {
+      return false
+    }
+
+    setIsRefreshing(true)
+    
+    try {
+      const { accessToken } = await apiService.refresh(rt)
+
+      const payload = parseJwt<JwtPayload>(accessToken)
+      if (!payload) throw new Error("Invalid JWT received on refresh")
+
+      // Update tokens in storage and API service
+      localStorage.setItem("auth_token", accessToken)
+      localStorage.setItem("tenant_id", payload.tenantId)
+
+      apiService.setAuth(accessToken, payload.tenantId)
+      apiService.setRefreshToken(rt) // Keep the same refresh token
+
+      await ensureCompanyId(payload)
+
+      // Update user state
+      const companyName = localStorage.getItem('company_name') || 'My Company'
+      setUser({
+        id: payload.sub,
+        email: payload.sub,
+        firstName: "User",
+        lastName: "",
+        companyName,
+        role: payload.roles?.[0] as User["role"] || "employee",
+        isEmailVerified: true,
+        createdAt: new Date().toISOString(),
+        tenantId: payload.tenantId
+      })
+
+      console.log("Tokens refreshed successfully")
+      return true
+    } catch (err) {
+      console.error("Token refresh failed", err)
+      return false
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  // Check and refresh token if needed before API calls
+  const ensureValidToken = async (): Promise<boolean> => {
+    // Only run on client side
+    if (typeof window === "undefined") {
+      return false
+    }
+
+    const token = localStorage.getItem("auth_token")
+    if (!token) return false
+
+    if (isTokenExpired(token)) {
+      console.log("Token expired, refreshing before API call")
+      return await refreshTokens()
+    }
+
+    return true
+  }
+
+  // Handle 401 errors by attempting token refresh
+  const handleAuthError = async (): Promise<boolean> => {
+    console.log("Handling authentication error, attempting token refresh")
+    const success = await refreshTokens()
+    
+    if (!success) {
+      console.log("Token refresh failed, logging out user")
+      await logout()
+    }
+    
+    return success
+  }
+
+  // ---- Auth Status ---- //
+  const checkAuthStatus = async () => {
+    console.log("🔐 checkAuthStatus called")
+    // Only run on client side
+    if (typeof window === "undefined") {
+      console.log("🔐 checkAuthStatus: SSR, setting loading false")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const token = localStorage.getItem("auth_token")
+      const tenantId = localStorage.getItem("tenant_id")
+      console.log("🔐 checkAuthStatus: token present:", !!token, "tenantId present:", !!tenantId)
+      
+      if (!token || !tenantId) {
+        console.log("🔐 checkAuthStatus: no token or tenantId, logging out")
+        await logout()
+        return
+      }
+
+      const payload = parseJwt<JwtPayload>(token)
+      if (!payload) {
+        await logout()
+        return
+      }
+
+      // Check if token is expired or will expire soon (within 5 minutes)
+      const now = Date.now() / 1000
+      const expiresSoon = payload.exp && (payload.exp - now) < 300 // 5 minutes
+
+      if (payload.exp && (now >= payload.exp || expiresSoon)) {
+        console.warn("Access token expired or expiring soon, attempting refresh")
+        const refreshSuccess = await refreshTokens()
+        
+        if (!refreshSuccess) {
+          console.warn("Token refresh failed, logging out")
+          await logout()
+        }
+        return
+      }
+
+        apiService.setAuth(token, tenantId)
+        // Ensure refresh token is available for 401 auto-refresh on first load
+        try {
+          const rt = localStorage.getItem("refresh_token")
+          if (rt) apiService.setRefreshToken(rt)
+        } catch {}
+        // Add a small delay to ensure auth headers are properly set
+        await new Promise(resolve => setTimeout(resolve, 100))
+        await ensureCompanyId(payload)
+        
+      setUser({
+            id: payload.sub,
+        email: payload.sub,
+        firstName: "User",
+        lastName: "",
+        companyName: localStorage.getItem('company_name') || 'My Company',
+        role: payload.roles?.[0] as User["role"] || "employee",
+            isEmailVerified: true,
+            createdAt: new Date().toISOString(),
+        tenantId
+      })
+    } catch (error) {
+      console.error("Auth check failed", error)
+    } finally {
+    }
+  }
+
+  }
+
+  // ---- Login ---- //
+  const login = async (email: string, password: string) => {
+    setIsLoading(true)
+    try {
+      try { 
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('disable_demo_auth')
+        }
+      } catch (e) {
+        console.warn('Failed to clear demo auth flag:', e)
+      }
+      
+      console.log("🔐 Login attempt for:", email)
+      console.log("📡 Making API call to login endpoint...")
+      
+      // Attempt MFA-aware login
+      const result = await apiService.loginMfa(email, password)
+      
+      let accessToken: string | null = null
+      let refreshToken: string | null = null
+      let payload: JwtPayload | null = null
+      let tenantId = "tenant_default"
+      let userProfile: any = null
+
+      if (!result.ok) {
+        // Handle MFA flow
+        const code = typeof window !== 'undefined' ? window.prompt('Enter your MFA code or a backup code:') : ''
+        if (!code) throw new Error('MFA code is required')
+        const tokens = await apiService.verifyMfaLogin(result.challengeToken, code)
+        accessToken = tokens.accessToken
+        refreshToken = tokens.refreshToken || null
+        payload = parseJwt<JwtPayload>(accessToken)
+        if (!payload) throw new Error('Invalid JWT received')
+        tenantId = payload.tenantId || tenantId
+      } else {
+        // Regular login flow
+        const loginResp = result.tokens
+        accessToken = (loginResp as any)?.accessToken ?? (loginResp as any)?.access_token ?? (loginResp as any)?.token ?? (loginResp as any)?.data?.accessToken
+        refreshToken = (loginResp as any)?.refreshToken ?? (loginResp as any)?.refresh_token ?? (loginResp as any)?.data?.refreshToken ?? null
+        payload = parseJwt<JwtPayload>(accessToken)
+        if (!payload) throw new Error('Invalid JWT received')
+        tenantId = payload.tenantId || tenantId
+      }
+
+      // Store tokens and tenant ID
+      localStorage.setItem("auth_token", accessToken)
+      if (refreshToken) {
+        localStorage.setItem("refresh_token", refreshToken)
+      }
+      localStorage.setItem("tenant_id", tenantId)
+      
+      // Set up API service with new tokens
+      apiService.setAuth(accessToken, tenantId)
+      if (refreshToken) {
+        apiService.setRefreshToken(refreshToken)
+      }
+
+      // Get user profile to get the correct company name
+      try {
+        userProfile = await apiService.getUserProfile()
+        if (userProfile?.companyName) {
+          localStorage.setItem("company_name", userProfile.companyName)
+        }
+      } catch (profileError) {
+        console.warn("Failed to fetch user profile:", profileError)
+        // If we can't get the profile, keep the existing company name or use a default
+        if (!localStorage.getItem('company_name')) {
+          localStorage.setItem('company_name', 'My Company')
+        }
+      }
+
+      // Ensure we have a valid company ID
+      if (payload) {
+        await ensureCompanyId(payload)
+      }
+
+      // Update user state with the correct company name
+      setUser({
+        id: payload?.sub || '',
+        email: payload?.email || email,
+        firstName: payload?.given_name || userProfile?.firstName || "User",
+        lastName: payload?.family_name || userProfile?.lastName || "",
+        companyName: localStorage.getItem('company_name') || 'My Company',
+        role: (payload?.roles?.[0] as User["role"]) || "employee",
+        isEmailVerified: payload?.email_verified || false,
+        createdAt: new Date().toISOString(),
+        tenantId
+      })
+
+    } catch (error) {
+      console.error("Login failed:", error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+      const tenantId = payload.tenantId || "tenant_default"
+
+  try { localStorage.setItem("auth_token", accessToken) } catch {}
+  try { if (refreshToken) localStorage.setItem("refresh_token", refreshToken) } catch {}
+  try { localStorage.setItem("tenant_id", tenantId) } catch {}
+
+  apiService.setAuth(accessToken, tenantId)
+  if (refreshToken) apiService.setRefreshToken(refreshToken)
+
+      await ensureCompanyId(payload)
+
+      // Get company name from localStorage or use a default
+      const companyName = localStorage.getItem('company_name') || 'My Company'
+      
+      const userData = {
+        id: payload.sub,
+        email,
+        firstName: "User",
+        lastName: "",
+        companyName,
+        role: payload.roles?.[0] as User["role"] || "employee",
+        isEmailVerified: true,
+        createdAt: new Date().toISOString(),
+        tenantId
+      }
+      
+      console.log("🎉 Login successful, setting user data:", userData)
+      setUser(userData)
+      console.log("✅ User state updated, isAuthenticated should now be:", !!userData)
+    } catch (error) {
+      console.error("❌ Login failed:", error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // ---- Demo Login ---- //
+  const loginWithDemo = async (sub: string, roles: string[] = ["admin"]) => {
+    setIsLoading(true)
+    try {
+      try { if (typeof window !== 'undefined') localStorage.removeItem('disable_demo_auth') } catch {}
+      const { token } = await apiService.getDemoToken(sub, roles)
+      const payload = parseJwt<JwtPayload>(token)
+      if (!payload) throw new Error("Invalid demo JWT")
+
+      localStorage.setItem("auth_token", token)
+      localStorage.setItem("tenant_id", payload.tenantId)
+      
+      apiService.setAuth(token, payload.tenantId)
+      await ensureCompanyId(payload)
+      
+      setUser({
+        id: payload.sub,
+        email: payload.sub,
+        firstName: "Demo",
+        lastName: "User",
+        companyName: localStorage.getItem('company_name') || 'My Company',
+        role: payload.roles?.[0] as User["role"] || "admin",
+        isEmailVerified: true,
+        createdAt: new Date().toISOString(),
+        tenantId: payload.tenantId
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // ---- Register ---- //
+  const register = async (_userData: RegisterData) => {
+    throw new Error("Registration not implemented yet.")
+  }
+
+  // ---- Clear All Data ---- //
+  const clearAllData = () => {
+    if (typeof window === "undefined") return
+    
+    try {
+      // Get all localStorage keys
+      const keys = Object.keys(localStorage)
+      
+      // Remove all keys except those that should persist
+      const keysToKeep = ['disable_demo_auth'] // Keep this to prevent demo login after logout
+      
+      keys.forEach(key => {
+        if (!keysToKeep.includes(key)) {
+          try {
+            localStorage.removeItem(key)
+          } catch (error) {
+            console.warn(`Failed to remove ${key} from localStorage:`, error)
+          }
+        }
+      })
+      
+      console.log('All user data cleared from localStorage')
+      console.error('Failed to clear localStorage:', error)
+    }
+  }
+
+  // Logout function
+  const logout = async () => {
+    try {
+      // Clear all auth-related data
+      ['auth_token', 'refresh_token', 'tenant_id', 'company_id', 'company_name'].forEach(key => {
+        try { localStorage.removeItem(key) } catch (e) { console.warn(`Failed to remove ${key}:`, e) }
+      })
+      // Reset API service
+      apiService.clearAuth()
+      // Reset user state
+      } catch (error) {
+        console.warn('Failed to set disable_demo_auth:', error)
+      }
+      
+      // Clear API service auth
+      apiService.setAuth("", "")
+      setUser(null)
+      
+      // Clear query cache
+      try { await qc.clear() } catch {}
+      
+      // Navigate to home page
+      try { navigate('/') } catch {}
+    }
+  }
+
+  // ---- Update User ---- //
+  const updateUser = async (userData: Partial<User>) => {
+    if (user) setUser({ ...user, ...userData })
+  }
+
+  // ---- useEffect hooks (after function definitions) ---- //
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted) {
+      console.log("🔐 AuthProvider: Checking auth status...")
+      checkAuthStatus()
+    }
+  }, [mounted])
+
+  // Set up periodic token refresh check
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window === "undefined" || !mounted) return
+
+    if (!user) return
+
+    const checkTokenExpiry = () => {
+      const token = localStorage.getItem("auth_token")
+      if (!token) return
+
+      const payload = parseJwt<JwtPayload>(token)
+      if (!payload?.exp) return
+
+      const now = Date.now() / 1000
+      const timeUntilExpiry = payload.exp - now
+
+      // If token expires in less than 10 minutes, refresh it
+      if (timeUntilExpiry < 600) {
+        console.log("Token expiring soon, proactively refreshing")
+        refreshTokens().catch(err => {
+          console.error("Proactive token refresh failed:", err)
+        })
+      }
+    }
+
+    // Check every 2 minutes
+    const interval = setInterval(checkTokenExpiry, 2 * 60 * 1000)
+    
+    // Also check immediately
+    checkTokenExpiry()
+
+    return () => clearInterval(interval)
+  }, [user, mounted])
+
+  const value: AuthContextType = {
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    isRefreshing,
+    login,
+    loginWithDemo,
+    register,
+    logout,
+    updateUser,
+    refreshTokens,
+    ensureValidToken,
+    handleAuthError,
+    clearAllData,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+// ---- Hook ---- //
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider")
+  }
+  return context
+}
