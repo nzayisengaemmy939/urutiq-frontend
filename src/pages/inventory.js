@@ -535,6 +535,16 @@ export default function InventoryPage() {
     const forecasts = forecastsQuery.data || [];
     const insights = insightsQuery.data;
     const recommendations = recommendationsQuery.data;
+    
+    // Debug: Log what products API returns
+    console.log('Products Query Status:', {
+        isLoading: productsQuery.isLoading,
+        error: productsQuery.error,
+        data: productsQuery.data
+    });
+    console.log('All Products:', allProducts);
+    console.log('Products Count:', allProducts.length);
+    
     // Debug: Log what analytics API returns
     console.log('Analytics API Response:', analytics);
     console.log('Analytics Query Status:', {
