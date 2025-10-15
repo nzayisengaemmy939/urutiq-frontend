@@ -537,6 +537,8 @@ export default function InventoryPage() {
     const recommendations = recommendationsQuery.data;
     
     // Debug: Log what products API returns
+    console.log('=== PRODUCTS DEBUG ===');
+    console.log('Company ID being used:', companyId);
     console.log('Products Query Status:', {
         isLoading: productsQuery.isLoading,
         error: productsQuery.error,
@@ -544,6 +546,13 @@ export default function InventoryPage() {
     });
     console.log('All Products:', allProducts);
     console.log('Products Count:', allProducts.length);
+    console.log('Products Query Data Structure:', {
+        hasData: !!productsQuery.data,
+        hasItems: !!productsQuery.data?.items,
+        hasDataArray: !!productsQuery.data?.data,
+        itemsLength: productsQuery.data?.items?.length || 0,
+        dataLength: productsQuery.data?.data?.length || 0
+    });
     
     // Debug: Log what analytics API returns
     console.log('Analytics API Response:', analytics);
