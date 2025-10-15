@@ -22,8 +22,8 @@ export const config = {
     },
     // Demo Configuration
     demo: {
-        tenantId: getEnvVar('NEXT_PUBLIC_DEMO_TENANT_ID', 'demo-tenant'),
-        companyId: getEnvVar('NEXT_PUBLIC_DEMO_COMPANY_ID', 'demo-company'),
+        tenantId: getEnvVar('NEXT_PUBLIC_DEMO_TENANT_ID', 'tenant_demo'),
+        companyId: getEnvVar('NEXT_PUBLIC_DEMO_COMPANY_ID', 'seed-company-1'),
     },
     // App Configuration
     app: {
