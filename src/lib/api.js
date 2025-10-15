@@ -236,6 +236,10 @@ class ApiService {
     // Convenience HTTP helpers that return the typed data payload (not the ApiResponse wrapper)
     async get(endpoint, options = {}) {
         const resp = await this.request(endpoint, { ...options, method: options.method || 'GET' });
+        // For products endpoint, return the full response to preserve items and data arrays
+        if (endpoint.includes('/api/products')) {
+            return resp;
+        }
         // Handle both wrapped responses (resp.data) and direct responses (resp)
         const result = resp.data ?? resp ?? {};
         return result;
