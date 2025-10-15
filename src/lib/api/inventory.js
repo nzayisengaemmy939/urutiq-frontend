@@ -33,8 +33,15 @@ export const inventoryApi = {
             queryParams.append('status', params.status);
         if (params?.locationId)
             queryParams.append('locationId', params.locationId);
+        
+        const headers = getHeaders();
+        console.log('=== INVENTORY API getProducts ===');
+        console.log('Params:', params);
+        console.log('Headers:', headers);
+        console.log('Query string:', queryParams.toString());
+        
         return await apiService.get(`/api/products?${queryParams.toString()}`, {
-            headers: getHeaders()
+            headers: headers
         });
     },
     getProduct: async (id) => {
