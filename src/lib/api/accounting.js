@@ -274,8 +274,8 @@ const purchaseApi = {
         const response = await apiService.get(`/api/vendors?${params.toString()}`, {
             headers: getHeaders()
         });
-        // Return just the items array to match frontend expectations
-        return response.items || [];
+        // Return just the data array to match frontend expectations
+        return response.data || response.items || [];
     },
     createVendor: async (data) => {
         return await apiService.post('/api/vendors', {
