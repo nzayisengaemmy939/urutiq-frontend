@@ -77,7 +77,7 @@ interface LlamaAIDemoProps {
 }
 
 export const LlamaAIDemo: FC<LlamaAIDemoProps> = ({ companyId }) => {
-  const API_BASE = import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com';
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com';
   const [activeTab, setActiveTab] = useState<TabId>('conversational');
   const [message, setMessage] = useState('');
   const [response, setResponse] = useState<LlamaResponse | null>(null);

@@ -23,7 +23,7 @@ const getApiBaseUrl = () => {
         return window.location.origin.replace(/:\d+$/, ':4000');
     }
     // Fallback for SSR or when window is not available
-    return process.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com';
+    return process.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com';
 };
 // Mock API functions - Replace with actual API calls
 const fetchInvoices = async (companyId) => {
@@ -79,7 +79,7 @@ const fetchBills = async (companyId) => {
         return { data: { bills: [] } };
     }
     console.log('Fetching bills with:', { companyId, token: token ? 'present' : 'missing', tenantId });
-    console.log('Bills URL:', `https://urutiq-backend-clean-11.onrender.com/api/bills?companyId=${companyId}`);
+    console.log('Bills URL:', `https://urutiq-backend-clean-af6v.onrender.com/api/bills?companyId=${companyId}`);
     console.log('Bills headers:', {
         'Authorization': `Bearer ${token}`,
         'x-tenant-id': tenantId,

@@ -267,7 +267,7 @@ export default function PurchaseOrdersPage() {
                 return;
             }
             toast.loading('Generating PDF...');
-            const response = await fetch(`https://urutiq-backend-clean-11.onrender.com/api/purchase-orders/${purchaseOrderId}/pdf`, {
+            const response = await fetch(`https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${purchaseOrderId}/pdf`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -325,7 +325,7 @@ export default function PurchaseOrdersPage() {
                 return;
             }
             toast.loading(`Sending to ${vendorName}...`);
-            const response = await fetch(`https://urutiq-backend-clean-11.onrender.com/api/purchase-orders/${purchaseOrderId}/send-to-vendor`, {
+            const response = await fetch(`https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${purchaseOrderId}/send-to-vendor`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -382,7 +382,7 @@ export default function PurchaseOrdersPage() {
                 }
             };
             // Call the delivery API
-            const response = await fetch(`https://urutiq-backend-clean-11.onrender.com/api/purchase-orders/${order.id}/deliver`, {
+            const response = await fetch(`https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${order.id}/deliver`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -532,7 +532,7 @@ export default function PurchaseOrdersPage() {
                                                                                         const apiCompanyId = getCompanyId();
                                                                                         const tenantId = localStorage.getItem('tenant_id') || 'tenant_demo';
                                                                                         const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
-                                                                                        const response = await fetch(`https://urutiq-backend-clean-11.onrender.com/api/purchase-orders/${order.id}/deliver`, {
+                                                                                        const response = await fetch(`https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${order.id}/deliver`, {
                                                                                             method: 'POST',
                                                                                             headers: {
                                                                                                 'Authorization': `Bearer ${token}`,

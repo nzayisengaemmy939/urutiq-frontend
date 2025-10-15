@@ -14,7 +14,7 @@ dist
 
 ### Environment Variables:
 ```
-VITE_API_URL=https://urutiq-backend-clean-11.onrender.com
+VITE_API_URL=https://urutiq-backend-clean-af6v.onrender.com
 VITE_JWT_SECRET=dev-secret
 VITE_DEMO_TENANT_ID=tenant_demo
 VITE_DEMO_COMPANY_ID=seed-company-1

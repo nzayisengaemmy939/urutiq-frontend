@@ -359,7 +359,7 @@ export default function PurchaseOrdersPage() {
       toast.loading('Generating PDF...')
 
       const response = await fetch(
-        `https://urutiq-backend-clean-11.onrender.com/api/purchase-orders/${purchaseOrderId}/pdf`,
+        `https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${purchaseOrderId}/pdf`,
         {
           method: 'GET',
           headers: {
@@ -430,7 +430,7 @@ export default function PurchaseOrdersPage() {
       toast.loading(`Sending to ${vendorName}...`)
 
       const response = await fetch(
-        `https://urutiq-backend-clean-11.onrender.com/api/purchase-orders/${purchaseOrderId}/send-to-vendor`,
+        `https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${purchaseOrderId}/send-to-vendor`,
         {
           method: 'POST',
           headers: {
@@ -500,7 +500,7 @@ export default function PurchaseOrdersPage() {
 
       // Call the delivery API
       const response = await fetch(
-        `https://urutiq-backend-clean-11.onrender.com/api/purchase-orders/${order.id}/deliver`,
+        `https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${order.id}/deliver`,
         {
           method: 'POST',
           headers: {
@@ -864,7 +864,7 @@ export default function PurchaseOrdersPage() {
                                         const token = localStorage.getItem('token') || localStorage.getItem('auth_token')
 
                                         const response = await fetch(
-                                          `https://urutiq-backend-clean-11.onrender.com/api/purchase-orders/${order.id}/deliver`,
+                                          `https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${order.id}/deliver`,
                                           {
                                             method: 'POST',
                                             headers: {

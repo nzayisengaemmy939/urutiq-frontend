@@ -12,8 +12,8 @@ const getEnvVar = (key, fallback) => {
 export const config = {
     // API Configuration
     api: {
-        baseUrl: getEnvVar('VITE_API_URL', 'https://urutiq-backend-clean-11.onrender.com'),
-        baseUrlWithoutApi: getEnvVar('VITE_API_URL', 'https://urutiq-backend-clean-11.onrender.com'),
+        baseUrl: getEnvVar('VITE_API_URL', 'https://urutiq-backend-clean-af6v.onrender.com'),
+        baseUrlWithoutApi: getEnvVar('VITE_API_URL', 'https://urutiq-backend-clean-af6v.onrender.com'),
         timeout: 30000,
     },
     // Authentication

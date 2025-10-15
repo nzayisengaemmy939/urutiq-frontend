@@ -63,7 +63,7 @@ interface InvoiceItem {
 const api = {
   // Receipt Processing
   processReceipt: async (imageUrl: string, companyId: string) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/receipts/process`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/receipts/process`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ const api = {
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
     
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/receipts/${companyId}?${params}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/receipts/${companyId}?${params}`, {
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -90,7 +90,7 @@ const api = {
   },
 
   batchProcessReceipts: async (imageUrls: string[], companyId: string) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/receipts/batch-process`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/receipts/batch-process`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ const api = {
 
   // Invoice Generation
   generateInvoice: async (customerId: string, items: InvoiceItem[], companyId: string, templateId?: string) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/invoices/generate?companyId=${companyId}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/invoices/generate?companyId=${companyId}`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ const api = {
   },
 
   getInvoices: async (companyId: string, limit: number = 10) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/invoices/${companyId}?limit=${limit}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/invoices/${companyId}?limit=${limit}`, {
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -130,7 +130,7 @@ const api = {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/customers/${companyId}?${params}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/customers/${companyId}?${params}`, {
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -140,7 +140,7 @@ const api = {
   },
 
   createAIInvoice: async (description: string, companyId: string, context?: any) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/invoices/ai-create`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/invoices/ai-create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ const api = {
   },
 
   getInvoiceTemplates: async (companyId: string) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/invoices/templates/${companyId}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/invoices/templates/${companyId}`, {
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -164,7 +164,7 @@ const api = {
 
   // Vendor/Customer Matching
   findVendorMatch: async (vendorName: string, companyId: string, context?: any) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/vendors/match`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/vendors/match`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -177,7 +177,7 @@ const api = {
   },
 
   findCustomerMatch: async (customerName: string, companyId: string, context?: any) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/customers/match`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/customers/match`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ const api = {
     if (search) params.append('search', search);
     if (limit) params.append('limit', limit.toString());
     
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/vendors/${companyId}?${params}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/vendors/${companyId}?${params}`, {
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -205,7 +205,7 @@ const api = {
 
   // Vendor CRUD Operations
   createVendor: async (vendorData: any, companyId: string) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/vendors`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/vendors`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -218,7 +218,7 @@ const api = {
   },
 
   updateVendor: async (vendorId: string, vendorData: any, companyId: string) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/vendors/${vendorId}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/vendors/${vendorId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -231,7 +231,7 @@ const api = {
   },
 
   deleteVendor: async (vendorId: string, companyId: string) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/vendors/${vendorId}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/vendors/${vendorId}`, {
       method: 'DELETE',
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
@@ -242,7 +242,7 @@ const api = {
   },
 
   getVendor: async (vendorId: string, companyId: string) => {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/vendors/${vendorId}/details?companyId=${companyId}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/vendors/${vendorId}/details?companyId=${companyId}`, {
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -256,7 +256,7 @@ const api = {
     if (search) params.append('search', search);
     if (limit) params.append('limit', limit.toString());
     
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/customers/${companyId}?${params}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/customers/${companyId}?${params}`, {
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -270,7 +270,7 @@ const api = {
     const params = new URLSearchParams();
     if (periodDays) params.append('periodDays', periodDays.toString());
     
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/intelligence/patterns/${companyId}?${params}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/intelligence/patterns/${companyId}?${params}`, {
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -283,7 +283,7 @@ const api = {
     const params = new URLSearchParams();
     if (periodDays) params.append('periodDays', periodDays.toString());
     
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/intelligence/stats/${companyId}?${params}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/intelligence/stats/${companyId}?${params}`, {
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -296,7 +296,7 @@ const api = {
     const params = new URLSearchParams();
     if (type) params.append('type', type);
     
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/enhanced-transaction-processing/recommendations/${companyId}?${params}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/enhanced-transaction-processing/recommendations/${companyId}?${params}`, {
       headers: {
         'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`

@@ -441,7 +441,7 @@ const purchaseApi = {
     },
     // Download good receipt PDF for purchase order
     downloadGoodReceiptPDF: async (purchaseOrderId) => {
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/good-receipts/purchase-orders/${purchaseOrderId}/good-receipt/pdf`, {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/good-receipts/purchase-orders/${purchaseOrderId}/good-receipt/pdf`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('auth_token')}`,
@@ -797,7 +797,7 @@ export const cardApi = {
     }
 };
 // Bills API Base URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://urutiq-backend-clean-11.onrender.com';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com';
 // Bills API
 export const billsApi = {
     // Get all bills

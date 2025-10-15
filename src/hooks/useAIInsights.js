@@ -18,7 +18,7 @@ export function useAIInsights() {
             if (!token) {
                 throw new Error('No authentication token found');
             }
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/ai-insights/dashboard?companyId=${companyId}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/ai-insights/dashboard?companyId=${companyId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -49,7 +49,7 @@ export function useAIInsights() {
         if (!token) {
             throw new Error('No authentication token found');
         }
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com'}/api/ai/insights/generate`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/ai/insights/generate`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

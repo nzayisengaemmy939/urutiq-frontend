@@ -8,7 +8,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { Brain, MessageSquare, FileText, TrendingUp, BarChart3, Zap, Send, Loader2, CheckCircle, AlertCircle, Lightbulb, Shield } from 'lucide-react';
 export const LlamaAIDemo = ({ companyId }) => {
-    const API_BASE = import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-11.onrender.com';
+    const API_BASE = import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com';
     const [activeTab, setActiveTab] = useState('conversational');
     const [message, setMessage] = useState('');
     const [response, setResponse] = useState(null);
