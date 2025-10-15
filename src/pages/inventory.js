@@ -17,6 +17,7 @@ import { useDemoAuth } from "../hooks/useDemoAuth";
 import { Plus, Search, Filter, Eye, Edit, Package, AlertTriangle, TrendingUp, BarChart3, MapPin, QrCode, RefreshCw, Settings, Bell, ArrowRightLeft, Calendar, DollarSign, Activity, PieChart, Check, X, ArrowRight, Calculator, Shield, AlertCircle, Info, User, Star, Phone, Mail, UserCheck, Clock, Thermometer, } from "lucide-react";
 import { inventoryApi } from '@/lib/api/inventory';
 import { categoriesApi } from '@/lib/api/categories';
+import { getCompanyId, getTenantId } from '@/lib/config';
 import BarcodeScanner from '@/components/barcode-scanner';
 import InventoryAnalyticsComponent from '@/components/inventory-analytics';
 import BulkOperations from '@/components/bulk-operations';
@@ -238,19 +239,6 @@ export default function InventoryPage() {
     // Setup demo authentication
     const { ready: authReady } = useDemoAuth('inventory');
     // Get company ID from localStorage or use default
-    const getCompanyId = () => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('company_id') || localStorage.getItem('companyId') || '';
-        }
-        return '';
-    };
-    // Get tenant ID from localStorage or use default
-    const getTenantId = () => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('tenant_id') || 'tenant_demo';
-        }
-        return 'tenant_demo';
-    };
     const [companyId, setCompanyId] = useState(getCompanyId());
     // Listen for company changes from header
     useEffect(() => {
