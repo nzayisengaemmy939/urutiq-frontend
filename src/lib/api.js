@@ -244,6 +244,10 @@ class ApiService {
         if (endpoint.includes('/api/companies')) {
             return resp.companies || [];
         }
+        // For vendors endpoint, return the data array directly
+        if (endpoint.includes('/api/vendors')) {
+            return resp.data || resp.items || [];
+        }
         // Handle both wrapped responses (resp.data) and direct responses (resp)
         const result = resp.data ?? resp ?? {};
         return result;

@@ -277,12 +277,12 @@ const purchaseApi = {
         
         console.log('=== GET VENDORS API RESPONSE ===');
         console.log('Full response:', response);
-        console.log('response.data:', response.data);
-        console.log('response.items:', response.items);
-        console.log('response.success:', response.success);
+        console.log('response type:', typeof response);
+        console.log('response is array:', Array.isArray(response));
+        console.log('response length:', response?.length);
         
-        // Return just the data array to match frontend expectations
-        const result = response.data || response.items || [];
+        // The API service now returns the data array directly for vendors
+        const result = Array.isArray(response) ? response : [];
         console.log('Final result:', result);
         return result;
     },

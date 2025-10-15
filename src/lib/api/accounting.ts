@@ -619,8 +619,8 @@ const purchaseApi = {
       headers: getHeaders()
     })
     
-    // Return just the data array to match frontend expectations
-    return response.data || response.items || []
+      // The API service now returns the data array directly for vendors
+      return Array.isArray(response) ? response : []
   },
 
   createVendor: async (data: Partial<Vendor>): Promise<Vendor> => {
