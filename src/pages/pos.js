@@ -158,7 +158,7 @@ export default function POSPage() {
         queryFn: () => apiService.getCustomers({ companyId: selectedCompany, pageSize: 1000 }),
         enabled: !!selectedCompany && isAuthenticated && !authLoading && demoAuthReady
     });
-    const customers = customersResponse?.items || [];
+    const customers = customersResponse?.data || customersResponse?.items || [];
     // Fetch recent invoices for quick access
     const { data: recentInvoicesResponse, isLoading: invoicesLoading } = useQuery({
         queryKey: ['pos-recent-invoices', selectedCompany],
