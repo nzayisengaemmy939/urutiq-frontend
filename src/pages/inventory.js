@@ -12,7 +12,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { PageLayout } from "../components/page-layout";
 import { useToast } from "../hooks/use-toast";
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useDemoAuth } from "../hooks/useDemoAuth";
 import { Plus, Search, Filter, Eye, Edit, Package, AlertTriangle, TrendingUp, BarChart3, MapPin, QrCode, RefreshCw, Settings, Bell, ArrowRightLeft, Calendar, DollarSign, Activity, PieChart, Check, X, ArrowRight, Calculator, Shield, AlertCircle, Info, User, Star, Phone, Mail, UserCheck, Clock, Thermometer, } from "lucide-react";
 import { inventoryApi } from '@/lib/api/inventory';
@@ -408,6 +408,118 @@ export default function InventoryPage() {
             });
         },
         enabled: true
+    });
+
+    // Product creation mutation with loading state
+    const createProductMutation = useMutation({
+        mutationFn: async (productData) => {
+            return await inventoryApi.createProduct(productData);
+        },
+        onSuccess: (data) => {
+            toast({
+                title: "Success",
+                description: "Product created successfully",
+            });
+            // Reset form
+            setNewProduct({
+                name: '',
+                sku: '',
+                description: '',
+                shortDescription: '',
+                unitPrice: 0,
+                costPrice: 0,
+                stockQuantity: 0,
+                minStockLevel: 0,
+                maxStockLevel: 0,
+                reorderPoint: 0,
+                category: '',
+                categoryId: '',
+                status: 'ACTIVE',
+                type: 'PRODUCT',
+                weight: 0,
+                dimensions: {
+                    length: 0,
+                    width: 0,
+                    height: 0
+                },
+                taxRate: 0,
+                taxInclusive: false,
+                taxCode: '',
+                taxExempt: false,
+                barcode: '',
+                tags: '',
+                seoTitle: '',
+                seoDescription: '',
+                metaKeywords: '',
+                isDigital: false,
+                isService: false,
+                isPhysical: true,
+                trackInventory: true,
+                allowBackorder: false,
+                allowPreorder: false,
+                preorderDate: '',
+                warrantyPeriod: 0,
+                warrantyUnit: 'MONTHS',
+                returnPolicy: '',
+                shippingClass: '',
+                isFeatured: false,
+                isBestSeller: false,
+                isNewArrival: false,
+                customFields: {},
+                images: [],
+                variants: [],
+                relatedProducts: [],
+                upsellProducts: [],
+                crossSellProducts: [],
+                // Additional fields to fix TypeScript errors
+                brand: '',
+                model: '',
+                visibility: 'public',
+                customField1: '',
+                customField2: '',
+                customField3: '',
+                customField4: '',
+                requiresLicense: false,
+                hasExpiryDate: false,
+                isBundle: false,
+                notes: ''
+            });
+            setShowAddProductDialog(false);
+            // Refresh products list
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            queryClient.invalidateQueries({ queryKey: ['analytics'] });
+            queryClient.invalidateQueries({ queryKey: ['kpis'] });
+        },
+        onError: (error) => {
+            console.error('Error creating product:', error);
+            // Default error message
+            let errorMessage = "Failed to create product. Please try again.";
+            // Log the full error for debugging
+            console.log('Full error object:', {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                message: error?.message,
+                stack: error?.stack
+            });
+            // Handle 409 Conflict (duplicate SKU)
+            if (error?.response?.status === 409 || error?.message?.includes('409')) {
+                errorMessage = `A product with SKU "${newProduct.sku}" already exists. Please use a different SKU.`;
+            }
+            // Handle 400 Bad Request
+            else if (error?.response?.status === 400 || error?.message?.includes('400')) {
+                errorMessage = "Invalid product data. Please check your inputs and try again.";
+            }
+            // Handle other errors
+            else if (error?.message) {
+                errorMessage = error.message;
+            }
+            toast({
+                title: "Error Creating Product",
+                description: errorMessage,
+                variant: "destructive"
+            });
+        }
     });
     // Show loading state if auth is not ready
     if (!authReady) {
@@ -1101,8 +1213,10 @@ export default function InventoryPage() {
                                                     newProduct.unitPrice <= 0 ||
                                                     newProduct.costPrice < 0 ||
                                                     newProduct.stockQuantity < 0 ||
-                                                    !newProduct.status?.trim(), className: "px-6 py-2.5 text-base font-medium bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed", onClick: async () => {
-                                                    try {
+                                                    !newProduct.status?.trim() ||
+                                                    createProductMutation.isPending, 
+                                                    className: "px-6 py-2.5 text-base font-medium bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed", 
+                                                    onClick: () => {
                                                         // Comprehensive validation with specific error messages
                                                         if (!newProduct.name?.trim()) {
                                                             toast({
@@ -1159,7 +1273,9 @@ export default function InventoryPage() {
                                                                 variant: "default"
                                                             });
                                                         }
-                                                        await inventoryApi.createProduct({
+                                                        
+                                                        // Use the mutation to create the product
+                                                        createProductMutation.mutate({
                                                             ...newProduct,
                                                             companyId: companyId,
                                                             type: 'PRODUCT',
@@ -1189,111 +1305,13 @@ export default function InventoryPage() {
                                                             // Remove the dimensions object to avoid conflicts
                                                             dimensions: undefined
                                                         });
-                                                        toast({
-                                                            title: "Success",
-                                                            description: "Product created successfully",
-                                                        });
-                                                        // Reset form
-                                                        setNewProduct({
-                                                            name: '',
-                                                            sku: '',
-                                                            description: '',
-                                                            shortDescription: '',
-                                                            unitPrice: 0,
-                                                            costPrice: 0,
-                                                            stockQuantity: 0,
-                                                            minStockLevel: 0,
-                                                            maxStockLevel: 0,
-                                                            reorderPoint: 0,
-                                                            category: '',
-                                                            categoryId: '',
-                                                            status: 'ACTIVE',
-                                                            type: 'PRODUCT',
-                                                            weight: 0,
-                                                            dimensions: {
-                                                                length: 0,
-                                                                width: 0,
-                                                                height: 0
-                                                            },
-                                                            taxRate: 0,
-                                                            taxInclusive: false,
-                                                            taxCode: '',
-                                                            taxExempt: false,
-                                                            barcode: '',
-                                                            tags: '',
-                                                            seoTitle: '',
-                                                            seoDescription: '',
-                                                            metaKeywords: '',
-                                                            isDigital: false,
-                                                            isService: false,
-                                                            isPhysical: true,
-                                                            trackInventory: true,
-                                                            allowBackorder: false,
-                                                            allowPreorder: false,
-                                                            preorderDate: '',
-                                                            warrantyPeriod: 0,
-                                                            warrantyUnit: 'MONTHS',
-                                                            returnPolicy: '',
-                                                            shippingClass: '',
-                                                            isFeatured: false,
-                                                            isBestSeller: false,
-                                                            isNewArrival: false,
-                                                            customFields: {},
-                                                            images: [],
-                                                            variants: [],
-                                                            relatedProducts: [],
-                                                            upsellProducts: [],
-                                                            crossSellProducts: [],
-                                                            // Additional fields to fix TypeScript errors
-                                                            brand: '',
-                                                            model: '',
-                                                            visibility: 'public',
-                                                            customField1: '',
-                                                            customField2: '',
-                                                            customField3: '',
-                                                            customField4: '',
-                                                            requiresLicense: false,
-                                                            hasExpiryDate: false,
-                                                            isBundle: false,
-                                                            notes: ''
-                                                        });
-                                                        setShowAddProductDialog(false);
-                                                        // Refresh products list
-                                                        queryClient.invalidateQueries({ queryKey: ['products'] });
-                                                        queryClient.invalidateQueries({ queryKey: ['categories'] });
-                                                        queryClient.invalidateQueries({ queryKey: ['analytics'] });
-                                                        queryClient.invalidateQueries({ queryKey: ['kpis'] });
-                                                    }
-                                                    catch (error) {
-                                                        console.error('Error creating product:', error);
-                                                        // Default error message
-                                                        let errorMessage = "Failed to create product. Please try again.";
-                                                        // Log the full error for debugging
-                                                        console.log('Full error object:', {
-                                                            status: error?.response?.status,
-                                                            data: error?.response?.data,
-                                                            message: error?.message,
-                                                            stack: error?.stack
-                                                        });
-                                                        // Handle 409 Conflict (duplicate SKU)
-                                                        if (error?.response?.status === 409 || error?.message?.includes('409')) {
-                                                            errorMessage = `A product with SKU "${newProduct.sku}" already exists. Please use a different SKU.`;
-                                                        }
-                                                        // Handle 400 Bad Request
-                                                        else if (error?.response?.status === 400 || error?.message?.includes('400')) {
-                                                            errorMessage = "Invalid product data. Please check your inputs and try again.";
-                                                        }
-                                                        // Handle other errors
-                                                        else if (error?.message) {
-                                                            errorMessage = error.message;
-                                                        }
-                                                        toast({
-                                                            title: "Error Creating Product",
-                                                            description: errorMessage,
-                                                            variant: "destructive"
-                                                        });
-                                                    }
-                                                }, children: [_jsx(Package, { className: "w-4 h-4 mr-2" }), "Create Product"] })] })] })] }) }), _jsx(Dialog, { open: showViewProductDialog, onOpenChange: setShowViewProductDialog, children: _jsxs(DialogContent, { className: "!max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] md:max-h-[90vh] md:w-[90vw] bg-gradient-to-br from-slate-50 to-slate-100/50", children: [_jsxs(DialogHeader, { className: "pb-6 border-b border-slate-200", children: [_jsxs(DialogTitle, { className: "flex items-center gap-3 text-2xl font-bold text-slate-800", children: [_jsx("div", { className: "p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-xl text-white shadow-lg", children: _jsx(Eye, { className: "w-6 h-6" }) }), "Product Details"] }), _jsx(DialogDescription, { className: "text-slate-600 text-base mt-2", children: "Comprehensive view of product information and analytics" })] }), selectedProduct && (_jsxs("div", { className: "space-y-8 mt-6", children: [_jsxs("div", { className: "bg-white rounded-xl border border-slate-200 shadow-sm p-6", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx("div", { className: "p-2 bg-blue-100 rounded-lg", children: _jsx(Package, { className: "w-5 h-5 text-blue-600" }) }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-800", children: "Essential Information" }), _jsx("p", { className: "text-sm text-slate-600", children: "Core product details and identification" })] })] }), _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6", children: [_jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Product Name" }), _jsx("div", { className: "p-3 bg-slate-50 border border-slate-200 rounded-lg", children: _jsx("p", { className: "text-base font-semibold text-slate-900", children: selectedProduct.name }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "SKU (Stock Keeping Unit)" }), _jsx("div", { className: "p-3 bg-slate-50 border border-slate-200 rounded-lg", children: _jsx("p", { className: "text-base font-mono text-slate-900", children: selectedProduct.sku }) })] })] }), selectedProduct.description && (_jsxs("div", { className: "mt-6 space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Description" }), _jsx("div", { className: "p-4 bg-slate-50 border border-slate-200 rounded-lg", children: _jsx("p", { className: "text-base text-slate-900 leading-relaxed", children: selectedProduct.description }) })] }))] }), _jsxs("div", { className: "bg-white rounded-xl border border-slate-200 shadow-sm p-6", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx("div", { className: "p-2 bg-green-100 rounded-lg", children: _jsx(DollarSign, { className: "w-5 h-5 text-green-600" }) }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-800", children: "Pricing & Financial Information" }), _jsx("p", { className: "text-sm text-slate-600", children: "Costs, pricing, and profit analysis" })] })] }), _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6", children: [_jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Selling Price" }), _jsx("div", { className: "p-3 bg-green-50 border border-green-200 rounded-lg", children: _jsxs("p", { className: "text-xl font-bold text-green-700", children: ["$", Number(selectedProduct.unitPrice).toFixed(2)] }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Cost Price" }), _jsx("div", { className: "p-3 bg-slate-50 border border-slate-200 rounded-lg", children: _jsxs("p", { className: "text-xl font-semibold text-slate-700", children: ["$", Number(selectedProduct.costPrice).toFixed(2)] }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Profit per Unit" }), _jsxs("div", { className: "p-3 bg-blue-50 border border-blue-200 rounded-lg", children: [_jsxs("p", { className: "text-xl font-bold text-blue-700", children: ["$", (Number(selectedProduct.unitPrice) - Number(selectedProduct.costPrice)).toFixed(2)] }), _jsxs("p", { className: "text-xs text-blue-600 mt-1", children: [(((Number(selectedProduct.unitPrice) - Number(selectedProduct.costPrice)) / Number(selectedProduct.unitPrice)) * 100).toFixed(1), "% margin"] })] })] })] })] }), _jsxs("div", { className: "bg-white rounded-xl border border-slate-200 shadow-sm p-6", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx("div", { className: "p-2 bg-purple-100 rounded-lg", children: _jsx(BarChart3, { className: "w-5 h-5 text-purple-600" }) }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-800", children: "Inventory & Stock Information" }), _jsx("p", { className: "text-sm text-slate-600", children: "Current stock levels and inventory value" })] })] }), _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6", children: [_jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Current Stock Quantity" }), _jsx("div", { className: "p-4 bg-purple-50 border border-purple-200 rounded-lg", children: _jsxs("div", { className: "flex items-center justify-between", children: [_jsx("p", { className: "text-2xl font-bold text-purple-700", children: Number(selectedProduct.stockQuantity) }), _jsx("span", { className: "text-sm text-purple-600 font-medium", children: "units" })] }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Total Inventory Value" }), _jsx("div", { className: "p-4 bg-indigo-50 border border-indigo-200 rounded-lg", children: _jsxs("div", { className: "flex items-center justify-between", children: [_jsxs("p", { className: "text-2xl font-bold text-indigo-700", children: ["$", (Number(selectedProduct.stockQuantity) * Number(selectedProduct.costPrice)).toFixed(2)] }), _jsx("span", { className: "text-sm text-indigo-600 font-medium", children: "total value" })] }) })] })] })] }), _jsxs("div", { className: "bg-white rounded-xl border border-slate-200 shadow-sm p-6", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx("div", { className: "p-2 bg-orange-100 rounded-lg", children: _jsx(Filter, { className: "w-5 h-5 text-orange-600" }) }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-800", children: "Classification & Status" }), _jsx("p", { className: "text-sm text-slate-600", children: "Category, type, and current status" })] })] }), _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6", children: [_jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Category" }), _jsx("div", { className: "p-3 bg-orange-50 border border-orange-200 rounded-lg", children: _jsxs("div", { className: "flex items-center gap-2", children: [_jsx("div", { className: "w-2 h-2 rounded-full bg-orange-500" }), _jsx("p", { className: "text-base font-medium text-orange-800", children: categories.find(c => c.id === selectedProduct.categoryId)?.name || 'Uncategorized' })] }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Product Type" }), _jsx("div", { className: "p-3 bg-blue-50 border border-blue-200 rounded-lg", children: _jsxs("div", { className: "flex items-center gap-2", children: [selectedProduct.type === 'PRODUCT' && _jsx(Package, { className: "w-4 h-4 text-blue-600" }), selectedProduct.type === 'SERVICE' && _jsx(Settings, { className: "w-4 h-4 text-purple-600" }), selectedProduct.type === 'DIGITAL' && _jsx(Activity, { className: "w-4 h-4 text-green-600" }), _jsx("p", { className: "text-base font-medium text-slate-800", children: selectedProduct.type === 'PRODUCT' ? 'Physical Product' :
+                                                    }, 
+                                                    children: [
+                                                        createProductMutation.isPending ? 
+                                                            _jsx(RefreshCw, { className: "w-4 h-4 mr-2 animate-spin" }) : 
+                                                            _jsx(Package, { className: "w-4 h-4 mr-2" }), 
+                                                        createProductMutation.isPending ? "Creating..." : "Create Product"
+                                                    ] })] })] })] }) }), _jsx(Dialog, { open: showViewProductDialog, onOpenChange: setShowViewProductDialog, children: _jsxs(DialogContent, { className: "!max-w-7xl max-h-[95vh] overflow-y-auto w-[95vw] md:max-h-[90vh] md:w-[90vw] bg-gradient-to-br from-slate-50 to-slate-100/50", children: [_jsxs(DialogHeader, { className: "pb-6 border-b border-slate-200", children: [_jsxs(DialogTitle, { className: "flex items-center gap-3 text-2xl font-bold text-slate-800", children: [_jsx("div", { className: "p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-xl text-white shadow-lg", children: _jsx(Eye, { className: "w-6 h-6" }) }), "Product Details"] }), _jsx(DialogDescription, { className: "text-slate-600 text-base mt-2", children: "Comprehensive view of product information and analytics" })] }), selectedProduct && (_jsxs("div", { className: "space-y-8 mt-6", children: [_jsxs("div", { className: "bg-white rounded-xl border border-slate-200 shadow-sm p-6", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx("div", { className: "p-2 bg-blue-100 rounded-lg", children: _jsx(Package, { className: "w-5 h-5 text-blue-600" }) }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-800", children: "Essential Information" }), _jsx("p", { className: "text-sm text-slate-600", children: "Core product details and identification" })] })] }), _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6", children: [_jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Product Name" }), _jsx("div", { className: "p-3 bg-slate-50 border border-slate-200 rounded-lg", children: _jsx("p", { className: "text-base font-semibold text-slate-900", children: selectedProduct.name }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "SKU (Stock Keeping Unit)" }), _jsx("div", { className: "p-3 bg-slate-50 border border-slate-200 rounded-lg", children: _jsx("p", { className: "text-base font-mono text-slate-900", children: selectedProduct.sku }) })] })] }), selectedProduct.description && (_jsxs("div", { className: "mt-6 space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Description" }), _jsx("div", { className: "p-4 bg-slate-50 border border-slate-200 rounded-lg", children: _jsx("p", { className: "text-base text-slate-900 leading-relaxed", children: selectedProduct.description }) })] }))] }), _jsxs("div", { className: "bg-white rounded-xl border border-slate-200 shadow-sm p-6", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx("div", { className: "p-2 bg-green-100 rounded-lg", children: _jsx(DollarSign, { className: "w-5 h-5 text-green-600" }) }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-800", children: "Pricing & Financial Information" }), _jsx("p", { className: "text-sm text-slate-600", children: "Costs, pricing, and profit analysis" })] })] }), _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6", children: [_jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Selling Price" }), _jsx("div", { className: "p-3 bg-green-50 border border-green-200 rounded-lg", children: _jsxs("p", { className: "text-xl font-bold text-green-700", children: ["$", Number(selectedProduct.unitPrice).toFixed(2)] }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Cost Price" }), _jsx("div", { className: "p-3 bg-slate-50 border border-slate-200 rounded-lg", children: _jsxs("p", { className: "text-xl font-semibold text-slate-700", children: ["$", Number(selectedProduct.costPrice).toFixed(2)] }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Profit per Unit" }), _jsxs("div", { className: "p-3 bg-blue-50 border border-blue-200 rounded-lg", children: [_jsxs("p", { className: "text-xl font-bold text-blue-700", children: ["$", (Number(selectedProduct.unitPrice) - Number(selectedProduct.costPrice)).toFixed(2)] }), _jsxs("p", { className: "text-xs text-blue-600 mt-1", children: [(((Number(selectedProduct.unitPrice) - Number(selectedProduct.costPrice)) / Number(selectedProduct.unitPrice)) * 100).toFixed(1), "% margin"] })] })] })] })] }), _jsxs("div", { className: "bg-white rounded-xl border border-slate-200 shadow-sm p-6", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx("div", { className: "p-2 bg-purple-100 rounded-lg", children: _jsx(BarChart3, { className: "w-5 h-5 text-purple-600" }) }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-800", children: "Inventory & Stock Information" }), _jsx("p", { className: "text-sm text-slate-600", children: "Current stock levels and inventory value" })] })] }), _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6", children: [_jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Current Stock Quantity" }), _jsx("div", { className: "p-4 bg-purple-50 border border-purple-200 rounded-lg", children: _jsxs("div", { className: "flex items-center justify-between", children: [_jsx("p", { className: "text-2xl font-bold text-purple-700", children: Number(selectedProduct.stockQuantity) }), _jsx("span", { className: "text-sm text-purple-600 font-medium", children: "units" })] }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Total Inventory Value" }), _jsx("div", { className: "p-4 bg-indigo-50 border border-indigo-200 rounded-lg", children: _jsxs("div", { className: "flex items-center justify-between", children: [_jsxs("p", { className: "text-2xl font-bold text-indigo-700", children: ["$", (Number(selectedProduct.stockQuantity) * Number(selectedProduct.costPrice)).toFixed(2)] }), _jsx("span", { className: "text-sm text-indigo-600 font-medium", children: "total value" })] }) })] })] })] }), _jsxs("div", { className: "bg-white rounded-xl border border-slate-200 shadow-sm p-6", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx("div", { className: "p-2 bg-orange-100 rounded-lg", children: _jsx(Filter, { className: "w-5 h-5 text-orange-600" }) }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-800", children: "Classification & Status" }), _jsx("p", { className: "text-sm text-slate-600", children: "Category, type, and current status" })] })] }), _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6", children: [_jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Category" }), _jsx("div", { className: "p-3 bg-orange-50 border border-orange-200 rounded-lg", children: _jsxs("div", { className: "flex items-center gap-2", children: [_jsx("div", { className: "w-2 h-2 rounded-full bg-orange-500" }), _jsx("p", { className: "text-base font-medium text-orange-800", children: categories.find(c => c.id === selectedProduct.categoryId)?.name || 'Uncategorized' })] }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Product Type" }), _jsx("div", { className: "p-3 bg-blue-50 border border-blue-200 rounded-lg", children: _jsxs("div", { className: "flex items-center gap-2", children: [selectedProduct.type === 'PRODUCT' && _jsx(Package, { className: "w-4 h-4 text-blue-600" }), selectedProduct.type === 'SERVICE' && _jsx(Settings, { className: "w-4 h-4 text-purple-600" }), selectedProduct.type === 'DIGITAL' && _jsx(Activity, { className: "w-4 h-4 text-green-600" }), _jsx("p", { className: "text-base font-medium text-slate-800", children: selectedProduct.type === 'PRODUCT' ? 'Physical Product' :
                                                                                 selectedProduct.type === 'SERVICE' ? 'Service' : 'Digital Product' })] }) })] }), _jsxs("div", { className: "space-y-3", children: [_jsx(Label, { className: "text-sm font-medium text-slate-700", children: "Status" }), _jsx("div", { className: "p-3 bg-slate-50 border border-slate-200 rounded-lg", children: _jsx("div", { className: `inline-flex px-2 py-1 rounded-full text-sm font-medium ${selectedProduct.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
                                                                         selectedProduct.status === 'INACTIVE' ? 'bg-red-100 text-red-800' :
                                                                             selectedProduct.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
