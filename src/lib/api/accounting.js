@@ -274,8 +274,17 @@ const purchaseApi = {
         const response = await apiService.get(`/api/vendors?${params.toString()}`, {
             headers: getHeaders()
         });
+        
+        console.log('=== GET VENDORS API RESPONSE ===');
+        console.log('Full response:', response);
+        console.log('response.data:', response.data);
+        console.log('response.items:', response.items);
+        console.log('response.success:', response.success);
+        
         // Return just the data array to match frontend expectations
-        return response.data || response.items || [];
+        const result = response.data || response.items || [];
+        console.log('Final result:', result);
+        return result;
     },
     createVendor: async (data) => {
         return await apiService.post('/api/vendors', {
@@ -393,8 +402,8 @@ const purchaseApi = {
         const response = await apiService.get(`/api/purchase-orders?${params.toString()}`, {
             headers: getHeaders()
         });
-        // Return just the items array to match frontend expectations
-        return response.items || [];
+        // Return just the data array to match frontend expectations
+        return response.data || response.items || [];
     },
     getPurchaseOrderById: async (id) => {
         return await apiService.get(`/api/purchase-orders/${id}`, {
@@ -531,8 +540,8 @@ const expenseApi = {
         const response = await apiService.get(`/api/expenses?${params.toString()}`, {
             headers: getHeaders()
         });
-        // Return just the items array to match frontend expectations
-        return response.items || [];
+        // Return just the data array to match frontend expectations
+        return response.data || response.items || [];
     },
     getExpenseById: async (id) => {
         return await apiService.get(`/api/expenses/${id}`, {

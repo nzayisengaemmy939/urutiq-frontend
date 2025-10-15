@@ -94,11 +94,60 @@ export default function PurchaseOrdersPage() {
         queryFn: async () => await companiesApi.getCompanies(),
         enabled: authReady
     });
-    const { data: vendors } = useQuery({
-        queryKey: ['vendors'],
-        queryFn: async () => await purchaseApi.getVendors(),
-        enabled: authReady
+    const { data: vendors, isLoading: vendorsLoading, error: vendorsError, refetch: refetchVendors } = useQuery({
+        queryKey: ['vendors', companyId],
+        queryFn: async () => {
+            console.log('=== FETCHING VENDORS ===');
+            console.log('companyId:', companyId);
+            console.log('authReady:', authReady);
+            console.log('purchaseApi.getVendors:', typeof purchaseApi.getVendors);
+            
+            try {
+                const result = await purchaseApi.getVendors(companyId);
+                console.log('Vendors result:', result);
+                console.log('Vendors type:', typeof result);
+                console.log('Vendors is array:', Array.isArray(result));
+                console.log('Vendors length:', result?.length);
+                return result;
+            } catch (error) {
+                console.error('Error fetching vendors:', error);
+                throw error;
+            }
+        },
+        enabled: authReady && !!companyId,
+        staleTime: 0, // Force fresh data
+        cacheTime: 0, // Don't cache
+        refetchOnMount: true,
+        refetchOnWindowFocus: true
     });
+
+    // Debug vendors data
+    console.log('=== VENDORS DEBUG ===');
+    console.log('vendors:', vendors);
+    console.log('vendorsLoading:', vendorsLoading);
+    console.log('vendorsError:', vendorsError);
+    console.log('companyId:', companyId);
+    console.log('authReady:', authReady);
+    console.log('Query enabled:', authReady && !!companyId);
+
+    // Expose test function to window for debugging
+    if (typeof window !== 'undefined') {
+        window.testVendorsFetch = async () => {
+            console.log('=== MANUAL VENDORS FETCH TEST ===');
+            try {
+                const result = await purchaseApi.getVendors(companyId);
+                console.log('Manual fetch result:', result);
+                return result;
+            } catch (error) {
+                console.error('Manual fetch error:', error);
+                throw error;
+            }
+        };
+        
+        window.refetchVendors = refetchVendors;
+        console.log('Test functions available: window.testVendorsFetch() and window.refetchVendors()');
+    }
+
     const { data: purchaseOrders, isLoading: ordersLoading } = useQuery({
         queryKey: ['purchase-orders', statusFilter],
         queryFn: async () => {

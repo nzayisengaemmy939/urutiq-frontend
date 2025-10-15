@@ -615,12 +615,12 @@ const purchaseApi = {
     // Request a large page size to get all vendors
     params.append('pageSize', '100')
     
-    const response = await apiService.get<{ items: Vendor[], pagination: any }>(`/api/vendors?${params.toString()}`, {
+    const response = await apiService.get<{ data: Vendor[], total: number, pagination: any }>(`/api/vendors?${params.toString()}`, {
       headers: getHeaders()
     })
     
-    // Return just the items array to match frontend expectations
-    return response.items || []
+    // Return just the data array to match frontend expectations
+    return response.data || response.items || []
   },
 
   createVendor: async (data: Partial<Vendor>): Promise<Vendor> => {
