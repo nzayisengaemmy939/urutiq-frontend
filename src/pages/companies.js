@@ -25,7 +25,7 @@ export default function CompaniesPage() {
         queryKey: ['companies'],
         queryFn: async () => {
             const response = await apiService.getCompanies({ page: 1, pageSize: 50 });
-            const companiesData = response?.data || response || [];
+            const companiesData = response?.companies || response?.data || response || [];
             // Process companies to extract fields from companySettings
             const processedCompanies = companiesData.map((company) => {
                 console.log('🔄 Processing company:', company.name, 'logoUrl:', company.logoUrl);

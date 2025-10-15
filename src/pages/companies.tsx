@@ -100,7 +100,7 @@ export default function CompaniesPage() {
     queryKey: ['companies'],
     queryFn: async () => {
       const response = await apiService.getCompanies({ page: 1, pageSize: 50 });
-      const companiesData = (response as any)?.data || response || [];
+      const companiesData = (response as any)?.companies || (response as any)?.data || response || [];
       
       // Process companies to extract fields from companySettings
       const processedCompanies = companiesData.map((company: any) => {
