@@ -190,9 +190,9 @@ export function CompanyManagement() {
                 <Users className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Users</p>
+                <p className="text-sm text-muted-foreground">Total Companies</p>
                 <p className="text-xl font-bold">
-                  {companies?.reduce((sum: number, c: Company) => sum + (c.userCount || 0), 0) || 0}
+                  {companies?.length || 0}
                 </p>
               </div>
             </div>
@@ -374,12 +374,71 @@ function CompanyForm({
     currency: company?.currency || 'USD',
     timezone: company?.timezone || 'UTC',
     description: company?.description || '',
+    logoUrl: company?.logoUrl || '',
     isActive: company?.isActive ?? true
   })
+  
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(company?.logoUrl || null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setLogoFile(file)
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file)
+      setLogoPreview(previewUrl)
+      setFormData({ ...formData, logoUrl: previewUrl })
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    
+    // If there's a logo file, upload it first
+    if (logoFile) {
+      try {
+        const formDataWithLogo = new FormData()
+        formDataWithLogo.append('logo', logoFile)
+        formDataWithLogo.append('companyId', company?.id || '')
+        
+        // Upload logo to backend
+        const response = await fetch(`/api/companies/${company?.id}/logo`, {
+          method: 'POST',
+          body: formDataWithLogo,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+            'x-tenant-id': localStorage.getItem('tenant_id') || '',
+            'x-company-id': localStorage.getItem('company_id') || ''
+          }
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          // The backend returns the logo URL in the data object
+          const logoUrl = result.data?.logoUrl || result.logoUrl
+          if (logoUrl) {
+            // Update formData with the uploaded logo URL
+            const updatedFormData = { ...formData, logoUrl }
+            onSubmit(updatedFormData)
+          } else {
+            console.error('No logo URL returned from server')
+            onSubmit(formData)
+          }
+        } else {
+          console.error('Failed to upload logo')
+          // Submit without logo URL if upload fails
+          onSubmit(formData)
+        }
+      } catch (error) {
+        console.error('Logo upload error:', error)
+        // Submit without logo URL if upload fails
+        onSubmit(formData)
+      }
+    } else {
+      // No logo file, submit as is
+      onSubmit(formData)
+    }
   }
 
   return (
@@ -394,6 +453,30 @@ function CompanyForm({
             placeholder="Enter company name"
             required
           />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="logo">Company Logo</Label>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain" />
+              ) : (
+                <Building2 className="w-8 h-8 text-slate-600" />
+              )}
+            </div>
+            <div className="flex-1">
+              <Input
+                id="logo"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Upload a logo image (PNG, JPG, GIF). Max size: 2MB
+              </p>
+            </div>
+          </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor="type">Company Type *</Label>

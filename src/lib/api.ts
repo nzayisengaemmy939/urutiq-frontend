@@ -1265,11 +1265,30 @@ async registerWithCompany(data: {
     const url = `/api/sales-accounting/process-payment/${invoiceId}`;
     console.log('🔍 Calling URL:', url);
     
-    const response = await this.request(url, {
-      method: 'POST',
-    });
-    console.log('🔍 processInvoicePayment response:', response);
-    return (response as any).data || { journalEntryId: '', inventoryMovements: [], success: false };
+    try {
+      const response = await this.request(url, {
+        method: 'POST',
+      });
+      console.log('🔍 processInvoicePayment response:', response);
+      return (response as any).data || { journalEntryId: '', inventoryMovements: [], success: false };
+    } catch (error: any) {
+      console.error('🔍 processInvoicePayment error:', error);
+      
+      // Provide more specific error messages
+      if (error.message) {
+        if (error.message.includes('Company with ID') && error.message.includes('not found')) {
+          throw new Error('Company not found. Please ensure the company exists and is active.');
+        } else if (error.message.includes('Failed to create account')) {
+          throw new Error('Account setup required. Please ensure the company has proper accounting accounts configured.');
+        } else if (error.message.includes('Transaction already closed') || error.message.includes('timeout')) {
+          throw new Error('Processing timeout. The operation took too long. Please try again.');
+        } else if (error.message.includes('Insufficient inventory')) {
+          throw new Error(error.message);
+        }
+      }
+      
+      throw new Error(`Failed to process invoice payment: ${error.message || 'Unknown error'}`);
+    }
   }
 
   async getInvoiceAccountingEntries(invoiceId: string): Promise<any[]> {

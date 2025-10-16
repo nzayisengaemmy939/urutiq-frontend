@@ -288,8 +288,8 @@ export default function EnhancedAccountsPayable() {
     enabled: authReady
   });
 
-  // Get company ID from localStorage or use the first available company
-  const firstCompanyId = localStorage.getItem('company_id') || localStorage.getItem('companyId') || (companiesData?.[0]?.id) || 'demo-company';
+  // Get company ID from localStorage or use seed-company-1 as default
+  const firstCompanyId = localStorage.getItem('company_id') || localStorage.getItem('companyId') || 'seed-company-1';
 
   // Debug company ID
   console.log('=== COMPANY ID DEBUG ===');
@@ -436,8 +436,8 @@ export default function EnhancedAccountsPayable() {
   const paymentStats = (paymentData as any)?.data?.stats || {};
   const purchaseOrders = (purchaseOrdersData as any)?.items || (purchaseOrdersData as any)?.data?.items || [];
 
-  // Form states
-  const [invoiceForm, setInvoiceForm] = useState({
+  // Helper function to get default form values
+  const getDefaultInvoiceForm = () => ({
     vendorId: '',
     purchaseOrderId: '',
     invoiceNumber: '',
@@ -450,6 +450,9 @@ export default function EnhancedAccountsPayable() {
     source: 'manual',
     notes: ''
   });
+
+  // Form states
+  const [invoiceForm, setInvoiceForm] = useState(getDefaultInvoiceForm());
 
   const [matchingForm, setMatchingForm] = useState({
     purchaseOrderId: '',
@@ -560,7 +563,36 @@ export default function EnhancedAccountsPayable() {
       console.log('Invoice creation response:', result);
       
       if (!response.ok) {
-        throw new Error(result.message || `HTTP ${response.status}`);
+        // Enhanced error handling for different status codes
+        let errorMessage = `HTTP ${response.status}`;
+        
+        if (response.status === 400) {
+          // Bad Request - validation errors
+          if (result.details && Array.isArray(result.details)) {
+            const validationErrors = result.details.map((detail: any) => 
+              `${detail.field || detail.path?.join('.')}: ${detail.message}`
+            ).join(', ');
+            errorMessage = `Validation failed: ${validationErrors}`;
+          } else if (result.message) {
+            errorMessage = result.message;
+          } else {
+            errorMessage = 'Invalid data provided. Please check all fields.';
+          }
+        } else if (response.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (response.status === 403) {
+          errorMessage = 'You do not have permission to perform this action.';
+        } else if (response.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+        
+        console.error('❌ Invoice creation failed:', {
+          status: response.status,
+          error: result,
+          data: data
+        });
+        
+        throw new Error(errorMessage);
       }
       
       return result;
@@ -570,6 +602,10 @@ export default function EnhancedAccountsPayable() {
       toast.success('Invoice captured successfully');
       setIsInvoiceDialogOpen(false);
       resetInvoiceForm(); // Clear form after successful creation
+    },
+    onError: (error: any) => {
+      console.error('❌ Invoice capture mutation error:', error);
+      toast.error(error.message || 'Failed to capture invoice');
     }
   });
 
@@ -843,19 +879,7 @@ export default function EnhancedAccountsPayable() {
   };
 
   const resetInvoiceForm = () => {
-    setInvoiceForm({
-      vendorId: '',
-      invoiceNumber: '',
-      invoiceDate: '',
-      dueDate: '',
-      totalAmount: '',
-      subtotal: '',
-      taxAmount: '',
-      currency: 'USD',
-      source: 'manual',
-      notes: '',
-      purchaseOrderId: ''
-    });
+    setInvoiceForm(getDefaultInvoiceForm());
     setSelectedInvoice(null);
     setFormErrors({}); // Clear form errors
   };
@@ -863,49 +887,162 @@ export default function EnhancedAccountsPayable() {
   const handleCaptureInvoice = () => {
     const errors: {[key: string]: string} = {};
     
-    // Validate required fields
+    // Enhanced validation to match backend schema requirements
+    
+    // 1. Validate vendorId (required, must be valid UUID)
     if (!invoiceForm.vendorId || invoiceForm.vendorId === 'loading-vendors' || invoiceForm.vendorId === 'no-vendors') {
       errors.vendorId = 'Please select a vendor';
+    } else if (typeof invoiceForm.vendorId !== 'string' || invoiceForm.vendorId.trim() === '') {
+      errors.vendorId = 'Vendor ID must be a valid string';
     }
     
+    // 2. Validate invoiceNumber (required, non-empty string)
     if (!invoiceForm.invoiceNumber || invoiceForm.invoiceNumber.trim() === '') {
       errors.invoiceNumber = 'Please enter an invoice number';
+    } else if (typeof invoiceForm.invoiceNumber !== 'string') {
+      errors.invoiceNumber = 'Invoice number must be a valid string';
     }
     
-    if (!invoiceForm.totalAmount || invoiceForm.totalAmount.trim() === '' || parseFloat(invoiceForm.totalAmount) <= 0) {
-      errors.totalAmount = 'Please enter a valid total amount';
-    }
-    
+    // 3. Validate invoiceDate (required, valid date)
     if (!invoiceForm.invoiceDate) {
       errors.invoiceDate = 'Please select an invoice date';
+    } else {
+      const invoiceDate = new Date(invoiceForm.invoiceDate);
+      if (isNaN(invoiceDate.getTime())) {
+        errors.invoiceDate = 'Please enter a valid date';
+      }
     }
     
-    // Validate purchase order if selected
+    // 4. Validate dueDate (optional, but if provided must be valid date)
+    if (invoiceForm.dueDate) {
+      const dueDate = new Date(invoiceForm.dueDate);
+      if (isNaN(dueDate.getTime())) {
+        errors.dueDate = 'Please enter a valid due date';
+      }
+    }
+    
+    // 5. Validate totalAmount (required, positive number)
+    if (!invoiceForm.totalAmount || invoiceForm.totalAmount.trim() === '') {
+      errors.totalAmount = 'Please enter a total amount';
+    } else {
+      const totalAmount = parseFloat(invoiceForm.totalAmount);
+      if (isNaN(totalAmount)) {
+        errors.totalAmount = 'Total amount must be a valid number';
+      } else if (totalAmount <= 0) {
+        errors.totalAmount = 'Total amount must be greater than 0';
+      }
+    }
+    
+    // 6. Validate subtotal (required, non-negative number)
+    if (!invoiceForm.subtotal || invoiceForm.subtotal.trim() === '') {
+      errors.subtotal = 'Please enter a subtotal amount';
+    } else {
+      const subtotal = parseFloat(invoiceForm.subtotal);
+      if (isNaN(subtotal)) {
+        errors.subtotal = 'Subtotal must be a valid number';
+      } else if (subtotal < 0) {
+        errors.subtotal = 'Subtotal cannot be negative';
+      }
+    }
+    
+    // 7. Validate taxAmount (required, non-negative number)
+    if (!invoiceForm.taxAmount || invoiceForm.taxAmount.trim() === '') {
+      errors.taxAmount = 'Please enter a tax amount';
+    } else {
+      const taxAmount = parseFloat(invoiceForm.taxAmount);
+      if (isNaN(taxAmount)) {
+        errors.taxAmount = 'Tax amount must be a valid number';
+      } else if (taxAmount < 0) {
+        errors.taxAmount = 'Tax amount cannot be negative';
+      }
+    }
+    
+    // 8. Validate currency (required, exactly 3 characters)
+    if (!invoiceForm.currency || invoiceForm.currency.trim() === '') {
+      errors.currency = 'Please select a currency';
+    } else if (invoiceForm.currency.length !== 3) {
+      errors.currency = 'Currency must be exactly 3 characters (e.g., USD)';
+    }
+    
+    // 9. Validate source (required, must be one of allowed values)
+    const allowedSources = ['manual', 'email', 'api', 'ocr', 'upload'];
+    if (!invoiceForm.source || invoiceForm.source.trim() === '') {
+      errors.source = 'Please select a source';
+    } else if (!allowedSources.includes(invoiceForm.source)) {
+      errors.source = `Source must be one of: ${allowedSources.join(', ')}`;
+    }
+    
+    // 10. Validate purchase order if selected
     if (invoiceForm.purchaseOrderId && (invoiceForm.purchaseOrderId === 'loading' || invoiceForm.purchaseOrderId === 'no-pos')) {
       errors.purchaseOrderId = 'Please select a valid purchase order';
+    }
+    
+    // 11. Cross-field validation: subtotal + taxAmount should equal totalAmount (with tolerance)
+    if (!errors.subtotal && !errors.taxAmount && !errors.totalAmount) {
+      const subtotal = parseFloat(invoiceForm.subtotal);
+      const taxAmount = parseFloat(invoiceForm.taxAmount);
+      const totalAmount = parseFloat(invoiceForm.totalAmount);
+      const calculatedTotal = subtotal + taxAmount;
+      const tolerance = 0.01; // Allow small rounding differences
+      
+      if (Math.abs(calculatedTotal - totalAmount) > tolerance) {
+        errors.totalAmount = `Total amount (${totalAmount}) should equal subtotal (${subtotal}) + tax (${taxAmount}) = ${calculatedTotal}`;
+      }
     }
     
     // Set errors and return if any validation fails
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
+      console.log('❌ Form validation failed:', errors);
       return;
     }
     
-    // Transform the form data to match the backend schema
+    // Transform the form data to match the backend schema with proper type conversion
     const invoiceData = {
-      vendorId: invoiceForm.vendorId,
-      invoiceNumber: invoiceForm.invoiceNumber.trim(),
-      invoiceDate: invoiceForm.invoiceDate,
-      dueDate: invoiceForm.dueDate || null,
-      totalAmount: parseFloat(invoiceForm.totalAmount) || 0,
-      subtotal: parseFloat(invoiceForm.subtotal) || parseFloat(invoiceForm.totalAmount) || 0,
-      taxAmount: parseFloat(invoiceForm.taxAmount) || 0,
-      currency: invoiceForm.currency,
-      source: invoiceForm.source,
+      vendorId: String(invoiceForm.vendorId).trim(),
+      invoiceNumber: String(invoiceForm.invoiceNumber).trim(),
+      invoiceDate: invoiceForm.invoiceDate, // Already validated as valid date
+      dueDate: invoiceForm.dueDate ? invoiceForm.dueDate : null,
+      totalAmount: Number(parseFloat(invoiceForm.totalAmount)), // Ensure it's a number
+      subtotal: Number(parseFloat(invoiceForm.subtotal)), // Ensure it's a number
+      taxAmount: Number(parseFloat(invoiceForm.taxAmount)), // Ensure it's a number
+      currency: String(invoiceForm.currency).toUpperCase(), // Ensure uppercase
+      source: String(invoiceForm.source), // Already validated against allowed values
       notes: invoiceForm.notes?.trim() || null,
       // Include purchase order reference if available
-      ...(invoiceForm.purchaseOrderId && invoiceForm.purchaseOrderId !== 'loading' && invoiceForm.purchaseOrderId !== 'no-pos' && { purchaseOrderId: invoiceForm.purchaseOrderId })
+      ...(invoiceForm.purchaseOrderId && 
+          invoiceForm.purchaseOrderId !== 'loading' && 
+          invoiceForm.purchaseOrderId !== 'no-pos' && 
+          { purchaseOrderId: String(invoiceForm.purchaseOrderId).trim() })
     };
+    
+    // Final validation of transformed data
+    console.log('📤 Sending invoice data:', invoiceData);
+    
+    // Additional safety checks
+    if (typeof invoiceData.vendorId !== 'string' || invoiceData.vendorId === '') {
+      console.error('❌ Invalid vendorId after transformation:', invoiceData.vendorId);
+      setFormErrors({ vendorId: 'Invalid vendor selected' });
+      return;
+    }
+    
+    if (typeof invoiceData.totalAmount !== 'number' || invoiceData.totalAmount <= 0) {
+      console.error('❌ Invalid totalAmount after transformation:', invoiceData.totalAmount);
+      setFormErrors({ totalAmount: 'Invalid total amount' });
+      return;
+    }
+    
+    if (typeof invoiceData.subtotal !== 'number' || invoiceData.subtotal < 0) {
+      console.error('❌ Invalid subtotal after transformation:', invoiceData.subtotal);
+      setFormErrors({ subtotal: 'Invalid subtotal amount' });
+      return;
+    }
+    
+    if (typeof invoiceData.taxAmount !== 'number' || invoiceData.taxAmount < 0) {
+      console.error('❌ Invalid taxAmount after transformation:', invoiceData.taxAmount);
+      setFormErrors({ taxAmount: 'Invalid tax amount' });
+      return;
+    }
     
     // Check if we're editing an existing invoice
     if (selectedInvoice && selectedInvoice.id) {

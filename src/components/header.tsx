@@ -1,4 +1,4 @@
-import { Brain, Search, Bell, Settings, User, LogOut } from "lucide-react"
+import { Brain, Search, Bell, Settings, User, LogOut, Lock } from "lucide-react"
 import React from "react"
 import { GlobalSearch } from "./global-search"
 import { MobileNavigation } from "./mobile-navigation"
@@ -48,48 +48,76 @@ export function Header() {
   const companiesList = React.useMemo(() => {
     console.log('🏢 Header - companiesList memo:', companies);
     if (!companies) return [];
-    if (Array.isArray(companies)) return companies;
-    if (companies.data && Array.isArray(companies.data)) return companies.data;
-    return [];
+    
+    let allCompanies = [];
+    if (Array.isArray(companies)) {
+      allCompanies = companies;
+    } else if (companies.data && Array.isArray(companies.data)) {
+      allCompanies = companies.data;
+    } else {
+      return [];
+    }
+    
+    // Filter to only show UrutiQ Demo Company (seed-company-1)
+    const filteredCompanies = allCompanies.filter((company: any) => company.id === 'seed-company-1');
+    console.log('🏢 Header - Filtered to show only seed-company-1:', filteredCompanies);
+    
+    return filteredCompanies;
   }, [companies])
-  const [activeCompany, setActiveCompany] = React.useState<string | undefined>(undefined)
+  const [activeCompany, setActiveCompany] = React.useState<string | undefined>('seed-company-1')
   React.useEffect(() => {
     if (!mounted) return
     try {
-      const c = localStorage.getItem('company_id') || localStorage.getItem('companyId') || localStorage.getItem('company')
-      if (c) setActiveCompany(c)
-    } catch {}
+      // ALWAYS force localStorage to seed-company-1
+      localStorage.setItem('company_id', 'seed-company-1')
+      localStorage.setItem('companyId', 'seed-company-1')
+      localStorage.setItem('company', 'seed-company-1')
+      setActiveCompany('seed-company-1')
+      console.log('✅ Forced company ID to seed-company-1 in localStorage')
+    } catch (error) {
+      console.error('❌ Error setting company ID:', error)
+    }
   }, [mounted])
+
+  // Periodic check to ensure localStorage stays on seed-company-1
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      try {
+        const currentCompany = localStorage.getItem('company_id') || localStorage.getItem('companyId') || localStorage.getItem('company')
+        if (currentCompany !== 'seed-company-1') {
+          console.log('⚠️ Detected unauthorized company change, forcing back to seed-company-1')
+          localStorage.setItem('company_id', 'seed-company-1')
+          localStorage.setItem('companyId', 'seed-company-1')
+          localStorage.setItem('company', 'seed-company-1')
+          setActiveCompany('seed-company-1')
+        }
+      } catch (error) {
+        console.error('❌ Error checking company ID:', error)
+      }
+    }, 1000) // Check every second
+
+    return () => clearInterval(interval)
+  }, [])
   const onCompanyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value
-    console.log('🔄 Company changing from', activeCompany, 'to', id)
-    setActiveCompany(id)
+    console.log('🔄 Attempted company change from', activeCompany, 'to', id)
+    
+    // ALWAYS force back to seed-company-1 - no exceptions
+    console.log('⚠️ Company changes are disabled. Forcing back to seed-company-1');
+    setActiveCompany('seed-company-1');
+    
+    // Always ensure localStorage is set to seed-company-1
     try { 
-      localStorage.setItem('company_id', id) 
-      // Also set the other keys for compatibility
-      localStorage.setItem('companyId', id)
-      localStorage.setItem('company', id)
-      console.log('✅ Company ID saved to localStorage:', id)
+      localStorage.setItem('company_id', 'seed-company-1') 
+      localStorage.setItem('companyId', 'seed-company-1')
+      localStorage.setItem('company', 'seed-company-1')
+      console.log('✅ Forced localStorage to seed-company-1')
     } catch (error) {
       console.error('❌ Error saving company ID:', error)
     }
     
-    // Invalidate all queries to force refetch with new company ID
-    try {
-      qc.invalidateQueries()
-      // Also clear the cache to ensure fresh data
-      qc.clear()
-      console.log('✅ React Query cache cleared')
-      
-      // Dispatch custom event for pages that don't use React Query
-      const event = new CustomEvent('companyChanged', { 
-        detail: { companyId: id, oldCompanyId: activeCompany } 
-      });
-      window.dispatchEvent(event);
-      console.log('✅ Company change event dispatched')
-    } catch (error) {
-      console.error('❌ Error clearing cache:', error)
-    }
+    // Prevent any cache clearing or events since we're not actually changing
+    console.log('🚫 Company change blocked - no cache clearing needed')
   }
 
   if (!mounted) {
@@ -143,10 +171,16 @@ export function Header() {
             <GlobalSearch />
           </div>
           <div className="flex items-center gap-2">
-            <select value={activeCompany} onChange={onCompanyChange} className="px-3 py-2 bg-card border border-border rounded-lg text-sm focus:ring-2 focus:ring-border focus:border-border min-w-[200px]">
-              {!companiesList.length && <option value="">No companies available</option>}
+            <Lock className="w-4 h-4 text-muted-foreground" />
+            <select 
+              value={activeCompany} 
+              onChange={onCompanyChange} 
+              className="px-3 py-2 bg-card border border-border rounded-lg text-sm focus:ring-2 focus:ring-border focus:border-border min-w-[200px] opacity-75 cursor-not-allowed"
+              disabled={true}
+              title="Company selection is locked to UrutiQ Demo Company"
+            >
               {companiesList.map((c: any) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>{c.name} (Locked)</option>
               ))}
             </select>
             {!companiesList.length && (

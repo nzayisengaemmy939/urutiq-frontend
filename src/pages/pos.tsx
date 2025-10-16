@@ -78,6 +78,10 @@ export default function POSPage() {
   const [isScanning, setIsScanning] = useState(false)
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
   const [manualBarcode, setManualBarcode] = useState('')
+  
+  // Loading states for invoice actions
+  const [markingAsSent, setMarkingAsSent] = useState<string | null>(null)
+  const [markingAsPaid, setMarkingAsPaid] = useState<string | null>(null)
 
   // Listen for company changes from header
   useEffect(() => {
@@ -711,6 +715,7 @@ export default function POSPage() {
 
   // Invoice action handlers
   const handleMarkInvoiceAsSent = async (invoiceId: string) => {
+    setMarkingAsSent(invoiceId)
     try {
       await apiService.updateInvoice(invoiceId, { status: 'sent' })
       queryClient.invalidateQueries({ queryKey: ['pos-recent-invoices'] })
@@ -724,10 +729,13 @@ export default function POSPage() {
         description: "Failed to update invoice status",
         variant: "destructive"
       })
+    } finally {
+      setMarkingAsSent(null)
     }
   }
 
   const handleMarkInvoiceAsPaid = async (invoiceId: string) => {
+    setMarkingAsPaid(invoiceId)
     try {
       // First, try to process accounting entries and inventory updates
       const accountingResult = await apiService.processInvoicePayment(invoiceId)
@@ -745,19 +753,38 @@ export default function POSPage() {
       })
     } catch (error: any) {
       console.error('Error marking invoice as paid:', error)
-      if (error.message && error.message.includes('Insufficient inventory')) {
-        toast({
-          title: "Insufficient Inventory",
-          description: error.message,
-          variant: "destructive"
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to mark invoice as paid. Please check inventory and try again.",
-          variant: "destructive"
-        })
+      
+      let errorTitle = "Error"
+      let errorDescription = "Failed to mark invoice as paid. Please try again."
+      
+      if (error.message) {
+        if (error.message.includes('Insufficient inventory')) {
+          errorTitle = "Insufficient Inventory"
+          errorDescription = error.message
+        } else if (error.message.includes('Company with ID') && error.message.includes('not found')) {
+          errorTitle = "Company Not Found"
+          errorDescription = "The company associated with this invoice could not be found. Please contact support."
+        } else if (error.message.includes('Failed to create account')) {
+          errorTitle = "Account Setup Required"
+          errorDescription = "Required accounting accounts are missing. Please ensure the company has proper account setup."
+        } else if (error.message.includes('Transaction already closed') || error.message.includes('timeout')) {
+          errorTitle = "Processing Timeout"
+          errorDescription = "The payment processing took too long. Please try again or contact support if the issue persists."
+        } else if (error.message.includes('Failed to process invoice payment')) {
+          errorTitle = "Payment Processing Failed"
+          errorDescription = error.message.replace('Failed to process invoice payment: ', '')
+        } else {
+          errorDescription = error.message
+        }
       }
+      
+      toast({
+        title: errorTitle,
+        description: errorDescription,
+        variant: "destructive"
+      })
+    } finally {
+      setMarkingAsPaid(null)
     }
   }
 
@@ -1659,9 +1686,19 @@ export default function POSPage() {
                                   size="sm"
                                   className="w-full h-7 text-xs"
                                   onClick={() => handleMarkInvoiceAsSent(invoice.id)}
+                                  disabled={markingAsSent === invoice.id}
                                 >
-                                  <Send className="w-3 h-3 mr-1" />
-                                  Mark as Sent
+                                  {markingAsSent === invoice.id ? (
+                                    <>
+                                      <div className="w-3 h-3 mr-1 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                                      Sending...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Send className="w-3 h-3 mr-1" />
+                                      Mark as Sent
+                                    </>
+                                  )}
                                 </Button>
                               )}
 
@@ -1672,9 +1709,19 @@ export default function POSPage() {
                                     size="sm"
                                     className="w-full h-7 text-xs bg-green-600 hover:bg-green-700"
                                     onClick={() => handleMarkInvoiceAsPaid(invoice.id)}
+                                    disabled={markingAsPaid === invoice.id}
                                   >
-                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                    Mark as Paid
+                                    {markingAsPaid === invoice.id ? (
+                                      <>
+                                        <div className="w-3 h-3 mr-1 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                        Processing...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                        Mark as Paid
+                                      </>
+                                    )}
                                   </Button>
                                   
                                   {/* Payment Button for Online Payment */}

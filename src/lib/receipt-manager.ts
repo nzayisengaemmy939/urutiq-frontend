@@ -211,13 +211,34 @@ export class ReceiptManager {
       })
 
       if (!response.ok) {
-        throw new Error(`Email failed: ${response.statusText}`)
+        // Try to get detailed error information
+        let errorMessage = `Email failed: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMessage = errorData.error;
+            if (errorData.details) {
+              errorMessage += ` - ${errorData.details}`;
+            }
+          }
+        } catch (parseError) {
+          // If we can't parse the error response, use the status text
+        }
+        throw new Error(errorMessage);
       }
 
-      return true
+      const result = await response.json();
+      console.log('✅ Email receipt sent successfully:', result);
+      
+      // Check if there's a warning about SMTP not being configured
+      if (result.warning) {
+        console.warn('⚠️ Email warning:', result.warning);
+      }
+      
+      return true;
     } catch (error) {
-      console.error('Email receipt error:', error)
-      return false
+      console.error('Email receipt error:', error);
+      return false;
     }
   }
 
