@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCompanyId, getTenantId } from '../lib/config';
+import { getCompanyId, getTenantId, getApiUrl } from '../lib/config';
 
 export interface HealthScore {
   score: number;
@@ -125,7 +125,7 @@ export function useAIInsights() {
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/ai-insights/dashboard?companyId=${companyId}`,
+        getApiUrl(`api/ai-insights/dashboard?companyId=${companyId}`),
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -162,7 +162,7 @@ export function useAIInsights() {
     }
 
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/ai/insights/generate`,
+      getApiUrl(`api/ai/insights/generate`),
       {
         method: 'POST',
         headers: {

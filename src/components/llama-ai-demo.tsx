@@ -1,4 +1,5 @@
 import { useState, FC } from 'react';
+import { getApiUrl } from '../lib/config';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { SegmentedTabs } from '../components/ui/segmented-tabs';
 import { Button } from '../components/ui/button';
@@ -77,7 +78,7 @@ interface LlamaAIDemoProps {
 }
 
 export const LlamaAIDemo: FC<LlamaAIDemoProps> = ({ companyId }) => {
-  const API_BASE = import.meta.env.VITE_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com';
+  const API_BASE = getApiUrl('');
   const [activeTab, setActiveTab] = useState<TabId>('conversational');
   const [message, setMessage] = useState('');
   const [response, setResponse] = useState<LlamaResponse | null>(null);

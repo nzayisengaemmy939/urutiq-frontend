@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { getApiUrl } from '../lib/config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Button } from "../components/ui/button"
@@ -481,7 +482,7 @@ export default function HelpPage() {
   // Tutorial Video Management Functions
   const loadTutorialVideos = async () => {
     try {
-      const response = await fetch('https://urutiq-backend-clean-af6v.onrender.com/api/tutorial-videos', {
+      const response = await fetch(getApiUrl('api/tutorial-videos'), {
         method: 'GET',
         headers: {
           'x-tenant-id': localStorage.getItem('tenant_id') || 'tenant_demo',
@@ -526,7 +527,7 @@ export default function HelpPage() {
         formDataKeys: Array.from(formData.keys())
       });
 
-      const response = await fetch('https://urutiq-backend-clean-af6v.onrender.com/test-upload', {
+      const response = await fetch(getApiUrl('test-upload'), {
         method: 'POST',
         body: formData
       });
@@ -593,7 +594,7 @@ export default function HelpPage() {
       });
 
         // Use direct fetch instead of apiService to handle FormData properly
-        const response = await fetch('https://urutiq-backend-clean-af6v.onrender.com/api/tutorial-videos/upload', {
+        const response = await fetch(getApiUrl('api/tutorial-videos/upload'), {
           method: 'POST',
           body: formData,
           headers: {
@@ -658,7 +659,7 @@ export default function HelpPage() {
     const companyId = localStorage.getItem('company_id') || 'cmg0qxjh9003nao3ftbaz1oc1';
     const token = localStorage.getItem('auth_token') || '';
     
-    return `https://urutiq-backend-clean-af6v.onrender.com/api/tutorial-videos/stream/${videoId}?tenantId=${tenantId}&companyId=${companyId}&token=${token}`;
+    return getApiUrl(`api/tutorial-videos/stream/${videoId}?tenantId=${tenantId}&companyId=${companyId}&token=${token}`);
   };
 
   const addVideoTag = () => {

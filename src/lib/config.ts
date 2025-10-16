@@ -3,36 +3,40 @@
  * This centralizes all environment variables and provides fallbacks
  */
 
-// Get environment variables with fallbacks
-const getEnvVar = (key: string, fallback: string): string => {
+// Get environment variables - no fallbacks, must be set
+const getEnvVar = (key: string): string => {
   // @ts-ignore - Vite's import.meta.env
-  return import.meta.env[key] || fallback;
+  const value = import.meta.env[key];
+  if (!value) {
+    throw new Error(`Environment variable ${key} is required but not set`);
+  }
+  return value;
 };
 
 export const config = {
   // API Configuration
   api: {
-    baseUrl: getEnvVar('VITE_API_URL', 'https://urutiq-backend-clean-af6v.onrender.com'),
-    baseUrlWithoutApi: getEnvVar('VITE_API_URL', 'https://urutiq-backend-clean-af6v.onrender.com'),
+    baseUrl: getEnvVar('VITE_API_URL'),
+    baseUrlWithoutApi: getEnvVar('VITE_API_URL'),
     timeout: 30000,
   },
 
   // Authentication
   auth: {
-    jwtSecret: getEnvVar('VITE_JWT_SECRET', 'dev-secret'),
+    jwtSecret: getEnvVar('VITE_JWT_SECRET'),
   },
 
   // Demo Configuration
   demo: {
-    tenantId: getEnvVar('VITE_DEMO_TENANT_ID', 'tenant_demo'),
-    companyId: getEnvVar('VITE_DEMO_COMPANY_ID', 'seed-company-1'),
+    tenantId: getEnvVar('VITE_DEMO_TENANT_ID'),
+    companyId: getEnvVar('VITE_DEMO_COMPANY_ID'),
   },
 
   // App Configuration
   app: {
     name: 'UrutiIQ',
     version: '1.0.0',
-    environment: getEnvVar('MODE', 'development'),
+    environment: getEnvVar('MODE'),
   },
 } as const;
 

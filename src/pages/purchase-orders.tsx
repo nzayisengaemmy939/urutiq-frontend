@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useDemoAuth } from '../hooks/useDemoAuth'
-import { getCompanyId } from '../lib/config'
+import { getCompanyId, getApiUrl } from '../lib/config'
 import { purchaseApi, companiesApi, type Vendor, type PurchaseOrderLine } from '../lib/api/accounting'
 import { inventoryApi } from '../lib/api/inventory'
 import { formatCurrency } from '../lib/utils'
@@ -164,7 +164,11 @@ export default function PurchaseOrdersPage() {
 
   const { data: vendors } = useQuery<Vendor[]>({
     queryKey: ['vendors'],
-    queryFn: async () => await purchaseApi.getVendors(),
+    queryFn: async () => {
+      const result = await purchaseApi.getVendors();
+      // API service now handles data extraction
+      return result;
+    },
     enabled: authReady
   })
 
@@ -178,6 +182,7 @@ export default function PurchaseOrdersPage() {
           statusFilter === 'all' ? undefined : statusFilter as any
         );
         console.log('Purchase orders fetched successfully:', response);
+        // API service now handles data extraction
         return response as any as PurchaseOrder[];
       } catch (error) {
         console.error('Error fetching purchase orders:', error);
@@ -359,7 +364,7 @@ export default function PurchaseOrdersPage() {
       toast.loading('Generating PDF...')
 
       const response = await fetch(
-        `https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${purchaseOrderId}/pdf`,
+        getApiUrl(`api/purchase-orders/${purchaseOrderId}/pdf`),
         {
           method: 'GET',
           headers: {
@@ -430,7 +435,7 @@ export default function PurchaseOrdersPage() {
       toast.loading(`Sending to ${vendorName}...`)
 
       const response = await fetch(
-        `https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${purchaseOrderId}/send-to-vendor`,
+        getApiUrl(`api/purchase-orders/${purchaseOrderId}/send-to-vendor`),
         {
           method: 'POST',
           headers: {
@@ -500,7 +505,7 @@ export default function PurchaseOrdersPage() {
 
       // Call the delivery API
       const response = await fetch(
-        `https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${order.id}/deliver`,
+        getApiUrl(`api/purchase-orders/${order.id}/deliver`),
         {
           method: 'POST',
           headers: {
@@ -864,7 +869,7 @@ export default function PurchaseOrdersPage() {
                                         const token = localStorage.getItem('token') || localStorage.getItem('auth_token')
 
                                         const response = await fetch(
-                                          `https://urutiq-backend-clean-af6v.onrender.com/api/purchase-orders/${order.id}/deliver`,
+                                          getApiUrl(`api/purchase-orders/${order.id}/deliver`),
                                           {
                                             method: 'POST',
                                             headers: {

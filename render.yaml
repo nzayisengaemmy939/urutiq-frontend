@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: urutiq-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: http://localhost:4000
+      - key: VITE_JWT_SECRET
+        value: dev-secret
+      - key: VITE_DEMO_TENANT_ID
+        value: tenant_demo
+      - key: VITE_DEMO_COMPANY_ID
+        value: seed-company-1
+      - key: NODE_ENV
+        value: production

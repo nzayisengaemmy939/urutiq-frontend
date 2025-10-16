@@ -1,5 +1,6 @@
 // API service for accounting-related backend interactions
 import { apiService } from '../api'
+import { getApiUrl } from '../config'
 
 // Types for Account Types
 export interface AccountType {
@@ -834,7 +835,7 @@ const purchaseApi = {
 
   // Download good receipt PDF for purchase order
   downloadGoodReceiptPDF: async (purchaseOrderId: string): Promise<Blob> => {
-    const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com'}/api/good-receipts/purchase-orders/${purchaseOrderId}/good-receipt/pdf`, {
+    const response = await fetch(getApiUrl(`api/good-receipts/purchase-orders/${purchaseOrderId}/good-receipt/pdf`), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('auth_token')}`,
@@ -1228,8 +1229,6 @@ export const cardApi = {
   }
 }
 
-// Bills API Base URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://urutiq-backend-clean-af6v.onrender.com';
 
 // Bills API
 export const billsApi = {
@@ -1246,7 +1245,7 @@ export const billsApi = {
     console.log('🔧 Bills API headers:', headers);
     
     const response = await fetch(
-      `${API_BASE_URL}/api/bills${queryString ? `?${queryString}` : ''}`,
+      getApiUrl(`api/bills${queryString ? `?${queryString}` : ''}`),
       { headers }
     );
     if (!response.ok) throw new Error('Failed to fetch bills');
@@ -1255,7 +1254,7 @@ export const billsApi = {
 
   // Get bill by ID
   getById: async (id: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/bills/${id}`, {
+    const response = await fetch(getApiUrl(`api/bills/${id}`), {
       headers: getHeaders()
     });
     if (!response.ok) throw new Error('Failed to fetch bill');
@@ -1265,7 +1264,7 @@ export const billsApi = {
   // Create new bill
   create: async (data: any) => {
     console.log('Creating bill with data:', data);
-    const response = await fetch(`${API_BASE_URL}/api/bills`, {
+    const response = await fetch(getApiUrl(`api/bills`), {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data)
@@ -1283,7 +1282,7 @@ export const billsApi = {
 
   // Update bill
   update: async (id: string, data: any) => {
-    const response = await fetch(`${API_BASE_URL}/api/bills/${id}`, {
+    const response = await fetch(getApiUrl(`api/bills/${id}`), {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data)
@@ -1297,7 +1296,7 @@ export const billsApi = {
 
   // Delete bill
   delete: async (id: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/bills/${id}`, {
+    const response = await fetch(getApiUrl(`api/bills/${id}`), {
       method: 'DELETE',
       headers: getHeaders()
     });
@@ -1310,7 +1309,7 @@ export const billsApi = {
 
   // Post bill (move from draft to posted)
   post: async (id: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/bills/${id}/post`, {
+    const response = await fetch(getApiUrl(`api/bills/${id}/post`), {
       method: 'POST',
       headers: getHeaders()
     });
@@ -1323,7 +1322,7 @@ export const billsApi = {
 
   // Record payment
   recordPayment: async (billId: string, paymentData: any) => {
-    const response = await fetch(`${API_BASE_URL}/api/bills/${billId}/payment`, {
+    const response = await fetch(getApiUrl(`api/bills/${billId}/payment`), {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(paymentData)
@@ -1337,7 +1336,7 @@ export const billsApi = {
 
   // Get aging report
   getAgingReport: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/bills/analytics/aging`, {
+    const response = await fetch(getApiUrl(`api/bills/analytics/aging`), {
       headers: getHeaders()
     });
     if (!response.ok) throw new Error('Failed to fetch aging report');

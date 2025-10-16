@@ -21,7 +21,7 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'https://urutiq-backend-clean-af6v.onrender.com',
+        target: 'http://localhost:4000',
         changeOrigin: true,
         secure: false,
       },

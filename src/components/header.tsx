@@ -142,12 +142,31 @@ export function Header() {
           <div className="flex-1">
             <GlobalSearch />
           </div>
-          <select value={activeCompany} onChange={onCompanyChange} className="px-3 py-2 bg-card border border-border rounded-lg text-sm focus:ring-2 focus:ring-border focus:border-border min-w-[200px]">
-            {!companiesList.length && <option value="">No companies</option>}
-            {companiesList.map((c: any) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <select value={activeCompany} onChange={onCompanyChange} className="px-3 py-2 bg-card border border-border rounded-lg text-sm focus:ring-2 focus:ring-border focus:border-border min-w-[200px]">
+              {!companiesList.length && <option value="">No companies available</option>}
+              {companiesList.map((c: any) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            {!companiesList.length && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  // Set default company for testing
+                  localStorage.setItem('company_id', 'seed-company-1');
+                  localStorage.setItem('company_name', 'Demo Company');
+                  localStorage.setItem('tenant_id', 'tenant_demo');
+                  console.log('🔧 Set default company for testing');
+                  window.location.reload();
+                }}
+                className="text-xs"
+              >
+                Set Demo
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Right side - Actions and User */}
@@ -218,7 +237,7 @@ export function Header() {
       </div>
 
       {/* Company prompt when none exists */}
-      {mounted && companiesList.length === 0 && (
+      {/* {mounted && companiesList.length === 0 && (
         <div className="px-4 lg:px-6 pb-3">
           <Alert>
             <AlertTitle>No company found</AlertTitle>
@@ -227,7 +246,7 @@ export function Header() {
             </AlertDescription>
           </Alert>
         </div>
-      )}
+      )} */}
     </header>
   )
 }
