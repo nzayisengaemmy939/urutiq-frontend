@@ -115,6 +115,7 @@ export function JournalNavigationBridge({
       console.log('📋 Fetching journal recent activity for company:', currentCompanyId);
       const [entries, approvals] = await Promise.all([
         apiService.getJournalEntries({
+          companyId: currentCompanyId, // Add companyId parameter
           pageSize: 3,
           sortBy: 'createdAt',
           sortOrder: 'desc'

@@ -2699,6 +2699,7 @@ async registerWithCompany(data: {
 
   // Journal Entries
   async getJournalEntries(params: {
+    companyId?: string; // Add companyId parameter
     dateFrom?: string;
     dateTo?: string;
     status?: string;
@@ -2714,6 +2715,8 @@ async registerWithCompany(data: {
     location?: string;
     page?: number;
     pageSize?: number;
+    sortBy?: string;
+    sortOrder?: string;
   }): Promise<{ entries: any[], pagination: any }> {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -2723,7 +2726,7 @@ async registerWithCompany(data: {
     });
     
     const response = await this.request(`/journal-hub/entries?${searchParams.toString()}`);
-    return (response as any)?.data || { entries: [], pagination: {} };
+    return response || { entries: [], pagination: {} };
   }
 
   async createJournalEntry(data: any): Promise<any> {
