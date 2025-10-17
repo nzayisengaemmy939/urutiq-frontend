@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { MoonLoader } from './ui/moon-loader';
 import { 
   BookOpen, 
   ArrowRight, 
@@ -434,7 +435,7 @@ export function JournalNavigationBridge({
           <CardContent>
             {activityLoading ? (
               <div className="flex items-center justify-center py-4">
-                <RefreshCw className="w-4 h-4 animate-spin" />
+                <MoonLoader size="sm" color="teal" />
               </div>
             ) : (
               <div className="space-y-3">

@@ -35,6 +35,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
+import { MoonLoader } from '../components/ui/moon-loader';
 import {
   Table,
   TableBody,
@@ -1124,7 +1125,14 @@ export default function EnhancedAccountsPayable() {
   };
 
   if (!authReady) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <MoonLoader size="lg" color="teal" />
+          <p className="text-muted-foreground mt-4">Loading accounts payable...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1314,7 +1322,10 @@ export default function EnhancedAccountsPayable() {
                   {invoicesLoading ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
-                        Loading invoices...
+                        <div className="flex items-center justify-center">
+                          <MoonLoader size="md" color="teal" />
+                          <span className="ml-3 text-muted-foreground">Loading invoices...</span>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : filteredInvoices.length === 0 ? (
@@ -1526,7 +1537,10 @@ export default function EnhancedAccountsPayable() {
                   {billsLoading ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8">
-                        Loading bills...
+                        <div className="flex items-center justify-center">
+                          <MoonLoader size="md" color="teal" />
+                          <span className="ml-3 text-muted-foreground">Loading bills...</span>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : filteredBills.length === 0 ? (

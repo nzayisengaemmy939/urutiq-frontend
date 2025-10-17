@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import { PageLayout } from "../components/page-layout"
+import { MoonLoader } from "../components/ui/moon-loader"
 import { useToast } from "../hooks/use-toast"
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useDemoAuth } from "../hooks/useDemoAuth"
@@ -476,8 +477,8 @@ export default function InventoryPage() {
       <PageLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading inventory...</p>
+            <MoonLoader size="lg" color="teal" />
+            <p className="text-muted-foreground mt-4">Loading inventory...</p>
           </div>
         </div>
       </PageLayout>
@@ -1176,7 +1177,7 @@ export default function InventoryPage() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+                      <MoonLoader size="sm" color="gray" />
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Loading...</p>
@@ -1323,7 +1324,7 @@ export default function InventoryPage() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+                      <MoonLoader size="sm" color="gray" />
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Loading...</p>
@@ -1506,8 +1507,8 @@ export default function InventoryPage() {
                 <div className="space-y-4">
                   {productsQuery.isLoading ? (
                     <div className="flex items-center justify-center py-8">
-                      <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-                      <span className="text-sm text-gray-500">Loading products...</span>
+                      <MoonLoader size="md" color="teal" />
+                      <span className="text-sm text-gray-500 ml-3">Loading products...</span>
                     </div>
                   ) : productsQuery.error ? (
                     <div className="flex items-center justify-center py-8 text-red-600">
@@ -1746,8 +1747,17 @@ export default function InventoryPage() {
                       onClick={handleGenerateAlerts}
                       disabled={alertsQuery.isLoading}
                     >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${alertsQuery.isLoading ? 'animate-spin' : ''}`} />
-                      Generate Alerts
+                      {alertsQuery.isLoading ? (
+                        <>
+                          <MoonLoader size="sm" className="mr-2" color="teal" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Generate Alerts
+                        </>
+                      )}
                     </Button>
                     <Button
                       variant="outline"
@@ -1762,8 +1772,8 @@ export default function InventoryPage() {
               <CardContent>
                 {alertsQuery.isLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                    <span className="text-sm text-muted-foreground">Loading alerts...</span>
+                    <MoonLoader size="sm" color="teal" />
+                    <span className="text-sm text-muted-foreground ml-3">Loading alerts...</span>
                   </div>
                 ) : alerts?.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -1775,8 +1785,17 @@ export default function InventoryPage() {
                       onClick={handleGenerateAlerts}
                       disabled={alertsQuery.isLoading}
                     >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${alertsQuery.isLoading ? 'animate-spin' : ''}`} />
-                      Generate Alerts
+                      {alertsQuery.isLoading ? (
+                        <>
+                          <MoonLoader size="sm" className="mr-2" color="teal" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Generate Alerts
+                        </>
+                      )}
                     </Button>
                   </div>
                 ) : (
@@ -1863,8 +1882,8 @@ export default function InventoryPage() {
               <CardContent>
                 {transfersQuery.isLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                    <span className="text-sm text-muted-foreground">Loading transfers...</span>
+                    <MoonLoader size="sm" color="teal" />
+                    <span className="text-sm text-muted-foreground ml-3">Loading transfers...</span>
                   </div>
                 ) : transfers?.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -8089,8 +8108,8 @@ export default function InventoryPage() {
                       />
                     ) : (
                       <div className="text-center">
-                        <RefreshCw className="w-8 h-8 mx-auto text-gray-400 mb-2 animate-spin" />
-                        <p className="text-sm text-gray-500">Generating QR Code...</p>
+                        <MoonLoader size="md" color="teal" />
+                        <p className="text-sm text-gray-500 mt-2">Generating QR Code...</p>
                       </div>
                     )}
                   </div>

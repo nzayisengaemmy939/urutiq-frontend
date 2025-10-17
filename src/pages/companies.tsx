@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { PageLayout } from '../components/page-layout';
+import { MoonLoader } from '../components/ui/moon-loader';
 import { 
   Building2, 
   Plus, 
@@ -710,7 +711,7 @@ export default function CompaniesPage() {
                     >
                       {uploadingLogo ? (
                         <>
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          <MoonLoader size="sm" className="mr-2" color="teal" />
                           Uploading...
                         </>
                       ) : (
@@ -1042,7 +1043,7 @@ export default function CompaniesPage() {
       <PageLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600 mx-auto"></div>
+            <MoonLoader size="lg" color="teal" />
             <p className="mt-2 text-muted-foreground">Loading companies...</p>
           </div>
         </div>

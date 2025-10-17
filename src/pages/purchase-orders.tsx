@@ -48,6 +48,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../components/ui/form'
 import { Textarea } from '../components/ui/textarea'
+import { MoonLoader } from '../components/ui/moon-loader'
 import { Separator } from '../components/ui/separator'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -163,9 +164,9 @@ export default function PurchaseOrdersPage() {
   })
 
   const { data: vendors } = useQuery<Vendor[]>({
-    queryKey: ['vendors'],
+    queryKey: ['vendors', companyId],
     queryFn: async () => {
-      const result = await purchaseApi.getVendors();
+      const result = await purchaseApi.getVendors(companyId);
       // API service now handles data extraction
       return result;
     },
@@ -570,7 +571,7 @@ export default function PurchaseOrdersPage() {
     return (
       <PageLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <MoonLoader size="lg" color="teal" />
         </div>
       </PageLayout>
     )
@@ -710,7 +711,7 @@ export default function PurchaseOrdersPage() {
             {/* Table */}
             {ordersLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <MoonLoader size="lg" />
               </div>
             ) : (
               <div className="overflow-hidden">
@@ -1080,7 +1081,7 @@ export default function PurchaseOrdersPage() {
                               try {
                                 await purchaseApi.createVendor({ name, companyId })
                                 toast.success('Vendor created')
-                                await queryClient.invalidateQueries({ queryKey: ['vendors'] })
+                                await queryClient.invalidateQueries({ queryKey: ['vendors', companyId] })
                               } catch (e: any) {
                                 toast.error(e?.message || 'Failed to create vendor')
                               }
@@ -1426,7 +1427,7 @@ export default function PurchaseOrdersPage() {
             </DialogHeader>
             {orderDetailsLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <MoonLoader size="md" color="teal" />
               </div>
             ) : orderDetails ? (
               <div className="space-y-6">

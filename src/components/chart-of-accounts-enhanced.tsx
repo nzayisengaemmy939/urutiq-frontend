@@ -14,6 +14,7 @@ import { Checkbox } from "../components/ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
 import { Alert, AlertDescription } from "../components/ui/alert"
 import { Separator } from "../components/ui/separator"
+import { MoonLoader } from "../components/ui/moon-loader"
 import { 
   Plus, 
   Edit, 
@@ -723,10 +724,7 @@ export function ChartOfAccounts() {
     return (
       <div className="min-h-[400px] flex items-center justify-center p-8">
         <div className="text-center space-y-4">
-          <div className="relative">
-            <RefreshCw className="h-12 w-12 animate-spin mx-auto text-blue-600" />
-            <div className="absolute inset-0 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin"></div>
-          </div>
+          <MoonLoader size="xl" color="teal" />
           <div className="space-y-2">
             <h3 className="text-lg font-semibold text-gray-900">Loading Chart of Accounts</h3>
             <p className="text-gray-500">Please wait while we fetch your account data...</p>

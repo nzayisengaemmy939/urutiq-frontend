@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { MoonLoader } from './ui/moon-loader';
 import { 
   Upload, 
   FileText, 
@@ -806,7 +807,7 @@ export const EnhancedTransactionProcessing: React.FC<{ companyId: string }> = ({
                   {isProcessing && (
                     <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-3">
                       <div className="flex items-center space-x-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <MoonLoader size="sm" color="blue" />
                         <span className="text-sm text-blue-800">
                           Processing {uploadedFiles.length} receipt(s) with AI-powered OCR...
                         </span>

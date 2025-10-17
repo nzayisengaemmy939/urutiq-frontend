@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { Label } from "../components/ui/label"
+import { MoonLoader } from "../components/ui/moon-loader"
 import { 
   ShoppingCart, Search, User, CreditCard, DollarSign, 
   Plus, Minus, X, Check, Calculator, Receipt, 
@@ -2757,7 +2758,7 @@ export default function POSPage() {
             >
               {sendEmailLoading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  <MoonLoader size="sm" className="mr-2" color="teal" />
                   Sending...
                 </>
               ) : (

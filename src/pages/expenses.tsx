@@ -21,6 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '../components/ui/textarea'
 import { Progress } from '../components/ui/progress'
 import { Separator } from '../components/ui/separator'
+import { MoonLoader } from '../components/ui/moon-loader'
 import { ReceiptCaptureModal } from '../components/receipt-capture'
 import { ExpenseReportModal } from '../components/expense-report-modal'
 import { ReimburseExpenseModal } from '../components/reimburse-expense-modal'
@@ -204,7 +205,7 @@ const ExpenseJournalEntries = ({ expenseId }: { expenseId: string }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-4">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+        <MoonLoader size="sm" color="teal" />
       </div>
     )
   }
@@ -1948,7 +1949,7 @@ export default function ExpensesPage() {
                                 >
                                   {createBudget.status === 'pending' || updateBudget.status === 'pending' ? (
                                     <>
-                                      <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                      <MoonLoader size="sm" className="mr-2" color="teal" />
                                       {editingBudget ? 'Updating...' : 'Creating...'}
                                     </>
                                   ) : (
@@ -2396,7 +2397,7 @@ export default function ExpensesPage() {
                 
                 {categoriesLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    <MoonLoader size="lg" color="teal" />
                   </div>
                 ) : filteredCategories.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -2466,7 +2467,7 @@ export default function ExpensesPage() {
                 </div>
                 {budgetsLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    <MoonLoader size="lg" color="teal" />
                   </div>
                 ) : filteredBudgets.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -2634,7 +2635,7 @@ export default function ExpensesPage() {
                 </div>
                 {rulesLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    <MoonLoader size="lg" color="teal" />
                   </div>
                 ) : filteredRules.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -2847,7 +2848,7 @@ export default function ExpensesPage() {
 
                 {expensesLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    <MoonLoader size="lg" color="teal" />
                   </div>
                 ) : (!expenses || expenses.length === 0) ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -3265,7 +3266,7 @@ export default function ExpensesPage() {
                                           title="Generate Journal Entry"
                                         >
                                           {generateJournalEntry.isPending ? (
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700"></div>
+                                            <MoonLoader size="sm" color="blue" />
                                           ) : (
                                             <BookOpen className="w-4 h-4" />
                                           )}
@@ -4088,7 +4089,7 @@ export default function ExpensesPage() {
                   >
                     {createExpense.isPending ? (
                       <>
-                        <div className="w-5 h-5 mr-2 animate-spin rounded-full border-3 border-white border-t-transparent"></div>
+                        <MoonLoader size="sm" className="mr-2" color="teal" />
                         Creating Expense...
                       </>
                     ) : (
@@ -4120,7 +4121,7 @@ export default function ExpensesPage() {
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 hover:scrollbar-thumb-slate-400 pr-2">
             {expenseDetailsLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <MoonLoader size="lg" color="teal" />
               </div>
             ) : expenseDetails ? (
               <div className="space-y-6 pb-4">
