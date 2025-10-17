@@ -17,32 +17,20 @@ const getEnvVar = (key: string, fallback?: string): string => {
   return value;
 };
 
-// Get API URL from environment variables only
+// Hardcoded API URL - Change this manually when needed
 const getApiBaseUrl = (): string => {
-  const apiUrl = import.meta.env.VITE_API_URL;
-  if (!apiUrl) {
-    throw new Error('VITE_API_URL environment variable is required but not set');
-  }
-  return apiUrl;
+  // 🔧 HARDCODED API URL - Change this manually:
+  const API_URL = 'https://urutiq-backend-enhanced-bco4.onrender.com';
+  
+  console.log('🔧 Using hardcoded API URL:', API_URL);
+  
+  return API_URL;
 };
 
-// Debug environment variables
-console.log('🔧 Environment Variables Debug:');
-console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
-console.log('VITE_JWT_SECRET:', import.meta.env.VITE_JWT_SECRET);
-console.log('VITE_DEMO_TENANT_ID:', import.meta.env.VITE_DEMO_TENANT_ID);
-console.log('VITE_DEMO_COMPANY_ID:', import.meta.env.VITE_DEMO_COMPANY_ID);
-console.log('MODE:', import.meta.env.MODE);
-console.log('All env vars:', import.meta.env);
-
-// Debug API URL selection
-try {
-  const selectedApiUrl = getApiBaseUrl();
-  console.log('🎯 Selected API URL:', selectedApiUrl);
-  console.log('🎯 Environment mode:', import.meta.env.MODE);
-} catch (error) {
-  console.error('❌ Error getting API URL:', error);
-}
+// Debug configuration
+console.log('🔧 Hardcoded Configuration:');
+console.log('API URL:', getApiBaseUrl());
+console.log('Hostname:', window.location.hostname);
 
 // Get the API URL for logging
 const apiUrl = getApiBaseUrl();
