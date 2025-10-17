@@ -70,7 +70,7 @@ console.log('🔧 Final Config:', config);
 export const getApiUrl = (endpoint: string = '') => {
   const baseUrl = config.api.baseUrl.replace(/\/$/, ''); // Remove trailing slash
   const cleanEndpoint = endpoint.replace(/^\//, ''); // Remove leading slash
-  const fullUrl = `${baseUrl}/${cleanEndpoint}`;
+  const fullUrl = cleanEndpoint ? `${baseUrl}/${cleanEndpoint}` : baseUrl;
   console.log('🔗 getApiUrl called:', { endpoint, baseUrl, fullUrl });
   return fullUrl;
 };
