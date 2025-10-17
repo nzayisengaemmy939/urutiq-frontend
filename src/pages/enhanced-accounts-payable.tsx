@@ -279,8 +279,18 @@ export default function EnhancedAccountsPayable() {
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
   const queryClient = useQueryClient();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const authReady = !authLoading;
+
+  // Debug authentication state
+  console.log('🔐 Auth Debug:', {
+    isAuthenticated,
+    authLoading,
+    authReady,
+    user: user ? 'User logged in' : 'No user',
+    tokenInStorage: localStorage.getItem('token') ? 'Token exists' : 'No token',
+    authTokenInStorage: localStorage.getItem('auth_token') ? 'Auth token exists' : 'No auth token'
+  });
 
   // Fetch companies first
   const { data: companiesData, isLoading: companiesLoading, error: companiesError } = useQuery({
@@ -537,16 +547,23 @@ export default function EnhancedAccountsPayable() {
         throw new Error('No token found');
       }
       
+      // Debug token
+      console.log('🔑 Token found:', token ? 'Yes' : 'No');
+      console.log('🔑 Token length:', token?.length);
+      console.log('🔑 Token preview:', token?.substring(0, 50) + '...');
+      
       let tenantId;
       try {
         const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
         tenantId = payload.tenantId;
+        console.log('🔑 Token payload:', payload);
       } catch (error) {
         console.error('Error parsing token:', error);
-        throw new Error('Invalid token');
+        throw new Error('Invalid token format');
       }
       
       console.log('Creating invoice with:', { tenantId, companyId: firstCompanyId, data });
+      console.log('📤 Invoice data being sent:', JSON.stringify(data, null, 2));
       
       const response = await fetch(`${getApiBaseUrl()}/api/accounts-payable/invoices`, {
         method: 'POST',
@@ -560,6 +577,8 @@ export default function EnhancedAccountsPayable() {
       });
       
       console.log('Invoice creation response status:', response.status);
+      console.log('Invoice creation response headers:', Object.fromEntries(response.headers.entries()));
+      
       const result = await response.json();
       console.log('Invoice creation response:', result);
       
@@ -606,7 +625,24 @@ export default function EnhancedAccountsPayable() {
     },
     onError: (error: any) => {
       console.error('❌ Invoice capture mutation error:', error);
-      toast.error(error.message || 'Failed to capture invoice');
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Show detailed error message
+      let errorMessage = 'Failed to capture invoice';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   });
 
@@ -886,6 +922,18 @@ export default function EnhancedAccountsPayable() {
   };
 
   const handleCaptureInvoice = () => {
+    // Check authentication first
+    if (!isAuthenticated) {
+      toast.error('Please log in to capture invoices');
+      return;
+    }
+
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+    if (!token) {
+      toast.error('Authentication token not found. Please log in again.');
+      return;
+    }
+
     const errors: {[key: string]: string} = {};
     
     // Enhanced validation to match backend schema requirements
@@ -1989,10 +2037,17 @@ export default function EnhancedAccountsPayable() {
                 onClick={handleCaptureInvoice} 
                 disabled={captureInvoiceMutation.isPending || updateInvoiceMutation.isPending}
               >
-                {captureInvoiceMutation.isPending || updateInvoiceMutation.isPending 
-                  ? (selectedInvoice ? 'Updating...' : 'Capturing...') 
-                  : (selectedInvoice ? 'Update Invoice' : 'Capture Invoice')
-                }
+                {captureInvoiceMutation.isPending || updateInvoiceMutation.isPending ? (
+                  <>
+                    <MoonLoader size="sm" className="mr-2" color="teal" />
+                    {selectedInvoice ? 'Updating...' : 'Capturing...'}
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {selectedInvoice ? 'Update Invoice' : 'Capture Invoice'}
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

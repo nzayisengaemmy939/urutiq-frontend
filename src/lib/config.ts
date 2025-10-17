@@ -92,7 +92,10 @@ export const getTenantId = (): string => {
       }
     }
     
-    throw new Error('Tenant ID not found in localStorage or auth token');
+    // During login process, use a default tenant ID
+    // This prevents the chicken-and-egg problem during authentication
+    console.warn('⚠️ No tenant ID found in localStorage or auth token. Using default tenant for login process.');
+    return 'tenant_demo';
   }
   
   throw new Error('Tenant ID not available in server environment');
