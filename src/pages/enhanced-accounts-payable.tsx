@@ -71,13 +71,8 @@ import { companiesApi, purchaseApi } from '../lib/api/accounting';
 import { getCompanyId } from '../lib/config';
 import { toast } from 'sonner';
 
-// Get API base URL dynamically
+// Use the same API configuration as the rest of the app
 const getApiBaseUrl = () => {
-  // In production, use the current origin
-  if (typeof window !== 'undefined') {
-    return window.location.origin.replace(/:\d+$/, ':4000');
-  }
-  // Fallback for SSR or when window is not available
   return getApiUrl('');
 };
 

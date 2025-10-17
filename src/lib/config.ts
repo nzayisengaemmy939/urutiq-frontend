@@ -3,48 +3,88 @@
  * This centralizes all environment variables and provides fallbacks
  */
 
-// Get environment variables - no fallbacks, must be set
-const getEnvVar = (key: string): string => {
+// Get environment variables with smart fallbacks
+const getEnvVar = (key: string, fallback?: string): string => {
   // @ts-ignore - Vite's import.meta.env
   const value = import.meta.env[key];
   if (!value) {
+    if (fallback) {
+      console.warn(`⚠️ Environment variable ${key} not set, using fallback: ${fallback}`);
+      return fallback;
+    }
     throw new Error(`Environment variable ${key} is required but not set`);
   }
   return value;
 };
 
+// Get API URL from environment variables only
+const getApiBaseUrl = (): string => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (!apiUrl) {
+    throw new Error('VITE_API_URL environment variable is required but not set');
+  }
+  return apiUrl;
+};
+
+// Debug environment variables
+console.log('🔧 Environment Variables Debug:');
+console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('VITE_JWT_SECRET:', import.meta.env.VITE_JWT_SECRET);
+console.log('VITE_DEMO_TENANT_ID:', import.meta.env.VITE_DEMO_TENANT_ID);
+console.log('VITE_DEMO_COMPANY_ID:', import.meta.env.VITE_DEMO_COMPANY_ID);
+console.log('MODE:', import.meta.env.MODE);
+console.log('All env vars:', import.meta.env);
+
+// Debug API URL selection
+try {
+  const selectedApiUrl = getApiBaseUrl();
+  console.log('🎯 Selected API URL:', selectedApiUrl);
+  console.log('🎯 Environment mode:', import.meta.env.MODE);
+} catch (error) {
+  console.error('❌ Error getting API URL:', error);
+}
+
+// Get the API URL for logging
+const apiUrl = getApiBaseUrl();
+console.log('🚀 API URL being used:', apiUrl);
+
 export const config = {
   // API Configuration
   api: {
-    baseUrl: getEnvVar('VITE_API_URL'),
-    baseUrlWithoutApi: getEnvVar('VITE_API_URL'),
+    baseUrl: apiUrl,
+    baseUrlWithoutApi: apiUrl,
     timeout: 30000,
   },
 
   // Authentication
   auth: {
-    jwtSecret: getEnvVar('VITE_JWT_SECRET'),
+    jwtSecret: import.meta.env.VITE_JWT_SECRET || 'dev-secret',
   },
 
-  // Demo Configuration - removed fallbacks
+  // Demo Configuration
   demo: {
-    tenantId: getEnvVar('VITE_DEMO_TENANT_ID'),
-    companyId: getEnvVar('VITE_DEMO_COMPANY_ID'),
+    tenantId: import.meta.env.VITE_DEMO_TENANT_ID || 'tenant_demo',
+    companyId: import.meta.env.VITE_DEMO_COMPANY_ID || 'seed-company-1',
   },
 
   // App Configuration
   app: {
     name: 'UrutiIQ',
     version: '1.0.0',
-    environment: getEnvVar('MODE'),
+    environment: getEnvVar('MODE', 'development'),
   },
 } as const;
+
+// Debug final config
+console.log('🔧 Final Config:', config);
 
 // Helper functions for common configurations
 export const getApiUrl = (endpoint: string = '') => {
   const baseUrl = config.api.baseUrl.replace(/\/$/, ''); // Remove trailing slash
   const cleanEndpoint = endpoint.replace(/^\//, ''); // Remove leading slash
-  return `${baseUrl}/${cleanEndpoint}`;
+  const fullUrl = `${baseUrl}/${cleanEndpoint}`;
+  console.log('🔗 getApiUrl called:', { endpoint, baseUrl, fullUrl });
+  return fullUrl;
 };
 
 export const getAuthHeaders = () => ({
