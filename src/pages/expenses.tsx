@@ -5,7 +5,9 @@ import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '../contexts/auth-context'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useDemoAuth } from '../hooks/useDemoAuth'
-import { expenseApi, companiesApi, chartOfAccountsApi, expenseJournalApi } from '../lib/api/accounting'
+import { expenseApi, chartOfAccountsApi, expenseJournalApi, purchaseApi } from '../lib/api/accounting'
+import { apiService } from '../lib/api'
+import { getCompanyId } from '../lib/config'
 import { PageLayout } from '../components/page-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -339,32 +341,32 @@ export default function ExpensesPage() {
   
   const queryClient = useQueryClient()
 
-  // Fetch companies first
-  const { data: companies } = useQuery<any>({
-    queryKey: ['companies'],
+  // Company ID is managed by header component and stored in localStorage
+
+  // Get company ID directly from localStorage (header ensures it's seed-company-1)
+  const firstCompanyId = useMemo(() => {
+    return getCompanyId();
+  }, [])
+
+  // Fetch company data to get the company name
+  const { data: companyData, isLoading: companyLoading, error: companyError } = useQuery({
+    queryKey: ['company', firstCompanyId],
     queryFn: async () => {
-      const result = await companiesApi.getCompanies() as any;
-      // Handle different response formats
-      if (Array.isArray(result)) return result;
-      if (result?.data && Array.isArray(result.data)) return result.data;
-      if (result?.items && Array.isArray(result.items)) return result.items;
-      return [];
+      return await apiService.getCompany(firstCompanyId);
     },
-    enabled: authReady
+    enabled: !!firstCompanyId,
+    retry: 2,
+    retryDelay: 1000
   })
 
-  // Get first company ID for dependent queries
-  const firstCompanyId = useMemo(() => {
-    const companiesArray = Array.isArray(companies) ? companies : companies?.items || companies?.data || []
-    return companiesArray[0]?.id || 'demo-company'
-  }, [companies])
+  // Get company name for display
+  const companyName = companyData?.name || (companyLoading ? 'Loading...' : 'Company')
 
-  // Fetch expense categories (depends on companies)
+  // Fetch expense categories (uses company ID from localStorage)
   const { data: categories, isLoading: categoriesLoading } = useQuery<any>({
     queryKey: ['expense-categories', searchTerm, firstCompanyId],
     queryFn: async () => {
       const result = await expenseApi.getExpenseCategories({ companyId: firstCompanyId, q: searchTerm || undefined }) as any;
-      console.log('📦 Categories API response:', result);
       // Handle different response formats
       if (Array.isArray(result)) return result;
       if (result?.data && Array.isArray(result.data)) return result.data;
@@ -378,7 +380,6 @@ export default function ExpensesPage() {
     queryKey: ['budgets', firstCompanyId],
     queryFn: async () => {
       const result = await expenseApi.getBudgets() as any;
-      console.log('💰 Budgets API response:', result);
       // Handle different response formats
       if (Array.isArray(result)) return result;
       if (result?.data && Array.isArray(result.data)) return result.data;
@@ -401,26 +402,26 @@ export default function ExpensesPage() {
 
   // Fetch GL accounts for expense form
   const { data: accountsData } = useQuery<any>({
-    queryKey: ['gl-accounts'],
+    queryKey: ['gl-accounts', firstCompanyId],
     queryFn: async () => {
-      const result = await chartOfAccountsApi.getAll() as any;
+      const result = await chartOfAccountsApi.getAll(firstCompanyId) as any;
       return result;
     },
-    enabled: authReady
+    enabled: authReady && !!firstCompanyId
   })
 
   // Fetch vendors for expense form
   const { data: vendors } = useQuery<any>({
-    queryKey: ['vendors'],
+    queryKey: ['vendors', firstCompanyId],
     queryFn: async () => {
-      const result = await expenseApi.getVendors() as any;
+      const result = await purchaseApi.getVendors(firstCompanyId) as any;
       // Handle different response formats
       if (Array.isArray(result)) return result;
       if (result?.data && Array.isArray(result.data)) return result.data;
       if (result?.items && Array.isArray(result.items)) return result.items;
       return [];
     },
-    enabled: authReady
+    enabled: authReady && !!firstCompanyId
   })
 
   // Expenses list (loaded when expenses tab is active)
@@ -450,7 +451,6 @@ export default function ExpensesPage() {
       try {
         return await expenseApi.approveExpense(id);
       } catch (error: any) {
-        console.error('Error approving expense:', error);
         // Extract error message from the error response
         const errorMessage = error?.response?.data?.details || 
                            error?.response?.data?.error?.message || 
@@ -459,12 +459,26 @@ export default function ExpensesPage() {
         throw new Error(errorMessage);
       }
     },
-    onSuccess: () => {
+    onSuccess: async (data, id) => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       toast.success('Expense approved');
+      
+      // Automatically trigger accounting after approval
+      try {
+        const hasEntries = await hasJournalEntries(id);
+        if (!hasEntries) {
+          // Generate journal entry automatically after approval
+          generateJournalEntry.mutate(id);
+          toast.success('Journal entry will be generated automatically');
+        } else {
+          toast.info('Journal entries already exist for this expense');
+        }
+      } catch (error) {
+        console.error('Failed to check journal entries:', error);
+        // Don't show error toast for this, as the main approval was successful
+      }
     },
     onError: (error: Error) => {
-      console.error('Approval error:', error);
       toast.error(error.message || 'Failed to approve expense');
     }
   })
@@ -906,7 +920,7 @@ export default function ExpensesPage() {
     mutationFn: async (data: any) => {
       return await expenseApi.createExpense({
         ...data,
-        companyId: data.companyId || (companies?.[0]?.id || '')
+        companyId: data.companyId || getCompanyId()
       })
     },
     onSuccess: () => {
@@ -957,7 +971,6 @@ export default function ExpensesPage() {
       const entries = await expenseJournalApi.getJournalEntries(expenseId)
       return entries && entries.length > 0
     } catch (error) {
-      console.error('Error checking journal entries:', error)
       return false
     }
   }
@@ -1055,7 +1068,7 @@ export default function ExpensesPage() {
   useEffect(() => {
     if (editingBudget) {
       budgetForm.reset({
-        companyId: (editingBudget as any).companyId || '',
+        companyId: (editingBudget as any).companyId || getCompanyId(), // ✅ Use getCompanyId() as fallback
         categoryId: editingBudget.category?.id || '',
         name: editingBudget.name || '',
         description: editingBudget.description || '',
@@ -1067,6 +1080,7 @@ export default function ExpensesPage() {
       })
     } else {
       budgetForm.reset({
+        companyId: getCompanyId(), // ✅ Set companyId for new budgets
         period: 'monthly' as const
       })
     }
@@ -1101,7 +1115,6 @@ export default function ExpensesPage() {
   if ((categories as any).data) return (categories as any).data
   return []
     } catch (error) {
-      console.error('Error in filteredCategories useMemo:', error)
       return []
     }
   }, [categories])
@@ -1114,7 +1127,6 @@ export default function ExpensesPage() {
   if ((budgets as any).data) return (budgets as any).data
   return []
     } catch (error) {
-      console.error('Error in filteredBudgets useMemo:', error)
       return []
     }
   }, [budgets])
@@ -1127,7 +1139,6 @@ export default function ExpensesPage() {
   if ((rules as any).data) return (rules as any).data
   return []
     } catch (error) {
-      console.error('Error in filteredRules useMemo:', error)
       return []
     }
   }, [rules])
@@ -1141,18 +1152,17 @@ export default function ExpensesPage() {
       if ((accountsData as any).data) return (accountsData as any).data
       return []
     } catch (error) {
-      console.error('Error in glAccounts useMemo:', error)
       return []
     }
   }, [accountsData])
 
-  // Filter expense accounts (typically type EXPENSE)
+  // Filter expense accounts (typically type EXPENSE) - show only expense accounts
   const expenseAccounts = React.useMemo(() => {
-    return glAccounts.filter((acc: any) => 
-      acc.type?.code === 'EXPENSE' || 
-      acc.accountType?.code === 'EXPENSE' ||
-      acc.isActive !== false
-    )
+    return glAccounts.filter((acc: any) => {
+      // Check if account type is EXPENSE
+      const accountType = acc.type?.code || acc.accountType?.code;
+      return accountType === 'EXPENSE' && acc.isActive !== false;
+    });
   }, [glAccounts])
 
   const getTaxTreatmentColor = (treatment?: string) => {
@@ -1279,8 +1289,6 @@ export default function ExpensesPage() {
       splitAccountId: data.splitAccountId && data.splitAccountId.trim() !== '' ? data.splitAccountId : undefined
     };
     
-    console.log('🧾 Expense form data being sent:', cleanedData);
-    
     // Create expense as draft - user can approve it later
     createExpense.mutate(cleanedData)
   }
@@ -1334,7 +1342,7 @@ export default function ExpensesPage() {
               onClick={() => {
                 setEditingCategory(category)
                 categoryForm.reset({
-                  companyId: (category as any).companyId || (companies as any)?.[0]?.id || '',
+                  companyId: (category as any).companyId || getCompanyId(),
                   name: category.name,
                   description: category.description || '',
                   parentId: category.parentId || '',
@@ -1500,7 +1508,7 @@ export default function ExpensesPage() {
                         onClick={() => {
                           setEditingCategory(null)
                           categoryForm.reset({
-                            companyId: (companies as any)?.[0]?.id || '',
+                            companyId: getCompanyId(),
                             name: '',
                             description: '',
                             parentId: '',
@@ -1530,20 +1538,13 @@ export default function ExpensesPage() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Company</FormLabel>
-                                <Select value={field.value} onValueChange={field.onChange}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select company" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {(Array.isArray(companies) ? companies : []).map((company: any) => (
-                                      <SelectItem key={company.id} value={company.id}>
-                                        {company.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <FormControl>
+                                  <Input 
+                                    value={companyName} 
+                                    disabled 
+                                    className="bg-slate-50"
+                                  />
+                                </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -1677,7 +1678,7 @@ export default function ExpensesPage() {
                 {activeTab === 'expenses' && (
                   <Button onClick={() => {
                     expenseForm.reset({
-                      companyId: (companies as any)?.[0]?.id || '',
+                      companyId: getCompanyId(),
                       categoryId: '',
                       description: '',
                       amount: 0,
@@ -1745,20 +1746,13 @@ export default function ExpensesPage() {
                             render={({ field }) => (
                               <FormItem>
                                               <FormLabel className="text-sm font-medium text-slate-700">Company *</FormLabel>
-                                <Select value={field.value} onValueChange={field.onChange}>
-                                  <FormControl>
-                                                  <SelectTrigger className="h-12 bg-white border-slate-300">
-                                      <SelectValue placeholder="Select company" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {(Array.isArray(companies) ? companies : []).map((company: any) => (
-                                      <SelectItem key={company.id} value={company.id}>
-                                        {company.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <FormControl>
+                                  <Input 
+                                    value={companyName} 
+                                    disabled 
+                                    className="bg-slate-50 h-12"
+                                  />
+                                </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -2072,35 +2066,29 @@ export default function ExpensesPage() {
                     New Rule
                   </Button>
                     </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                      <DialogHeader className="flex-shrink-0">
                         <DialogTitle>{editingRule ? 'Edit Expense Rule' : 'Create Expense Rule'}</DialogTitle>
                         <DialogDescription>
                           {editingRule ? 'Modify expense rule settings and conditions' : 'Create automated rules for expense approval and validation'}
                         </DialogDescription>
                       </DialogHeader>
-                      <Form {...ruleForm}>
-                        <form onSubmit={ruleForm.handleSubmit(onSubmitRule)} className="space-y-4">
+                      <div className="flex-1 overflow-y-auto px-1">
+                        <Form {...ruleForm}>
+                          <form onSubmit={ruleForm.handleSubmit(onSubmitRule)} className="space-y-4">
                           <FormField
                             control={ruleForm.control}
                             name="companyId"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Company</FormLabel>
-                                <Select value={field.value} onValueChange={field.onChange}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select company" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {(Array.isArray(companies) ? companies : []).map((company: any) => (
-                                      <SelectItem key={company.id} value={company.id}>
-                                        {company.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <FormControl>
+                                  <Input 
+                                    value={companyName} 
+                                    disabled 
+                                    className="bg-slate-50"
+                                  />
+                                </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -2293,19 +2281,21 @@ export default function ExpensesPage() {
                               </FormItem>
                             )}
                           />
-                          
-                          <div className="flex justify-end space-x-2">
-                            <Button type="button" variant="outline" onClick={() => setIsCreateRuleOpen(false)}>
-                              Cancel
-                            </Button>
-                            <Button type="submit" disabled={createRule.status === 'pending' || updateRule.status === 'pending'}>
-                              {createRule.status === 'pending' || updateRule.status === 'pending' 
-                                ? (editingRule ? 'Updating...' : 'Creating...') 
-                                : (editingRule ? 'Update Rule' : 'Create Rule')}
-                            </Button>
-                          </div>
                         </form>
                       </Form>
+                      </div>
+                      <div className="flex-shrink-0 border-t border-slate-200 p-4 bg-slate-50">
+                        <div className="flex justify-end space-x-2">
+                          <Button type="button" variant="outline" onClick={() => setIsCreateRuleOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button type="button" disabled={createRule.status === 'pending' || updateRule.status === 'pending'} onClick={ruleForm.handleSubmit(onSubmitRule)}>
+                            {createRule.status === 'pending' || updateRule.status === 'pending' 
+                              ? (editingRule ? 'Updating...' : 'Creating...') 
+                              : (editingRule ? 'Update Rule' : 'Create Rule')}
+                          </Button>
+                        </div>
+                      </div>
                     </DialogContent>
                   </Dialog>
                 )}
@@ -2420,7 +2410,7 @@ export default function ExpensesPage() {
                     <Button 
                       onClick={() => {
                         categoryForm.reset({
-                          companyId: (companies as any)?.[0]?.id || '',
+                          companyId: getCompanyId(),
                           name: '',
                           description: '',
                           parentId: '',
@@ -2490,7 +2480,7 @@ export default function ExpensesPage() {
                     <Button 
                       onClick={() => {
                         budgetForm.reset({
-                          companyId: (companies as any)?.[0]?.id || '',
+                          companyId: getCompanyId(), // ✅ Use getCompanyId() instead of companies array
                           categoryId: '',
                           name: '',
                           description: '',
@@ -2587,7 +2577,7 @@ export default function ExpensesPage() {
                                   onClick={() => {
                                     setEditingBudget(budget)
                                     budgetForm.reset({
-                                      companyId: (budget as any).companyId || (companies as any)?.[0]?.id || '',
+                                      companyId: (budget as any).companyId || getCompanyId(), // ✅ Use getCompanyId() as fallback
                                       categoryId: budget.category?.id || '',
                                       name: budget.name,
                                       description: budget.description || '',
@@ -2659,7 +2649,7 @@ export default function ExpensesPage() {
                       <Button 
                         onClick={() => {
                           ruleForm.reset({
-                            companyId: (companies as any)?.[0]?.id || '',
+                            companyId: getCompanyId(),
                             categoryId: '',
                             name: 'Require Approval',
                             description: 'All expenses require approval before payment',
@@ -2684,7 +2674,7 @@ export default function ExpensesPage() {
                         variant="outline"
                         onClick={() => {
                           ruleForm.reset({
-                            companyId: (companies as any)?.[0]?.id || '',
+                            companyId: getCompanyId(),
                             categoryId: '',
                             name: 'Amount Limit Rule',
                             description: 'Set spending limits for expense categories',
@@ -2760,7 +2750,7 @@ export default function ExpensesPage() {
                                     : ''
                                   
                                   ruleForm.reset({
-                                    companyId: (companies as any)?.[0]?.id || '',
+                                    companyId: getCompanyId(),
                                     categoryId: rule.category?.id || '',
                                     name: rule.name,
                                     description: rule.description || '',
@@ -2872,7 +2862,7 @@ export default function ExpensesPage() {
                       <Button 
                         onClick={() => {
                           expenseForm.reset({
-                            companyId: (companies as any)?.[0]?.id || '',
+                            companyId: getCompanyId(),
                             categoryId: '',
                             budgetId: 'auto',
                             description: '',
@@ -3434,20 +3424,13 @@ export default function ExpensesPage() {
                   render={({ field }) => (
                     <FormItem>
                           <FormLabel className="text-sm font-medium text-slate-700">Company *</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
-                                  <SelectTrigger className="h-12 bg-white border-slate-300">
-                            <SelectValue placeholder="Select company" />
-                          </SelectTrigger>
+                          <Input 
+                            value={companyName} 
+                            disabled 
+                            className="bg-slate-50 h-12"
+                          />
                         </FormControl>
-                        <SelectContent>
-                          {(Array.isArray(companies) ? companies : (companies as any)?.items || (companies as any)?.data || []).map((company: any) => (
-                            <SelectItem key={company.id} value={company.id}>
-                              {company.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -3774,7 +3757,8 @@ export default function ExpensesPage() {
                     Accounting Details
                   </h3>
                   <div className="space-y-4">
-                    <FormField
+                    {/* GL Account field hidden - accounts are selected during journal entry creation */}
+                    {/* <FormField
                       control={expenseForm.control}
                       name="accountId"
                       render={({ field }) => (
@@ -3797,7 +3781,7 @@ export default function ExpensesPage() {
                           <FormMessage />
                         </FormItem>
                       )}
-                    />
+                    /> */}
 
                     <FormField
                       control={expenseForm.control}
@@ -4092,6 +4076,7 @@ export default function ExpensesPage() {
                     type="button" 
                     variant="outline" 
                     onClick={() => setIsCreateExpenseOpen(false)}
+                    disabled={createExpense.isPending}
                     className="h-14 px-8 text-base font-semibold border-2 border-slate-300 hover:bg-slate-100 transition-all duration-200"
                   >
                     Cancel
@@ -4127,17 +4112,18 @@ export default function ExpensesPage() {
           setSelectedExpense(null)
         }
       }}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Expense Details</DialogTitle>
             <DialogDescription>View complete information about this expense</DialogDescription>
           </DialogHeader>
-          {expenseDetailsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            </div>
-          ) : expenseDetails ? (
-            <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 hover:scrollbar-thumb-slate-400 pr-2">
+            {expenseDetailsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : expenseDetails ? (
+              <div className="space-y-6 pb-4">
               {/* Basic Information */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -4236,12 +4222,13 @@ export default function ExpensesPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No expense details found</p>
-            </div>
-          )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No expense details found</p>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
       </>

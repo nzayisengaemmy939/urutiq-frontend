@@ -800,7 +800,7 @@ class ApiService {
         if (this.refreshTokenValue) {
           const refreshResp = await fetch(`${this.baseUrl}/api/auth/refresh`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-tenant-id': this.tenantId || getTenantId() },
+            headers: { 'Content-Type': 'application/json', 'x-tenant-id': getTenantId() },
             body: JSON.stringify({ refreshToken: this.refreshTokenValue })
           });
           if (refreshResp.ok) {
@@ -818,12 +818,12 @@ class ApiService {
 
         // If still unauthorized or no refresh available, obtain a demo token and retry once
         if (!retried && (response.status === 401)) {
-          try {
-            const demoResp = await fetch(`${this.baseUrl}/api/auth/demo-token`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-tenant-id': this.tenantId || getTenantId() },
-              body: JSON.stringify({ sub: 'demo_user', roles: ['admin','accountant'] })
-            })
+      try {
+        const demoResp = await fetch(`${this.baseUrl}/api/auth/demo-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-tenant-id': getTenantId() },
+          body: JSON.stringify({ sub: 'demo_user', roles: ['admin','accountant'] })
+        })
             if (demoResp.ok) {
               const { token } = await demoResp.json()
               if (token) {
@@ -1028,7 +1028,7 @@ async registerWithCompany(data: {
     const url = `${this.baseUrl}/api/auth/login`;
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-tenant-id': this.tenantId || getTenantId() },
+      headers: { 'Content-Type': 'application/json', 'x-tenant-id': getTenantId() },
       body: JSON.stringify({ email, password })
     });
     const bodyText = await res.text();
@@ -1066,7 +1066,7 @@ async registerWithCompany(data: {
     const url = `${this.baseUrl}/api/auth/mfa/login/verify`;
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-tenant-id': this.tenantId || getTenantId() },
+      headers: { 'Content-Type': 'application/json', 'x-tenant-id': getTenantId() },
       body: JSON.stringify({ challengeToken, code })
     });
     const text = await res.text();
@@ -1118,7 +1118,8 @@ async registerWithCompany(data: {
 
   async getCompany(id: string): Promise<Company> {
     const response = await this.request<Company>(`/api/companies/${id}`);
-    return (response as any).data || response.data || { id: '', name: '', createdAt: '', updatedAt: '' };
+    // The API returns the company object directly, not wrapped in data
+    return response || { id: '', name: '', createdAt: '', updatedAt: '' };
   }
 
   async createCompany(data: Partial<Company>): Promise<Company> {
@@ -1210,7 +1211,7 @@ async registerWithCompany(data: {
     return { invoiceNumber: fallback }
   }
 
-  async sendInvoiceEmail(id: string, opts: { to: string; subject?: string; message?: string; attachPdf?: boolean; pdfBlob?: Blob } ): Promise<{ ok: boolean }> {
+  async sendInvoiceEmail(id: string, opts: { to: string; subject?: string; message?: string; attachPdf?: boolean; pdfBlob?: Blob } ): Promise<{ ok: boolean; warning?: string; message?: string }> {
     console.log('🔍 API Service Debug:', {
       hasPdfBlob: !!opts.pdfBlob,
       pdfBlobSize: opts.pdfBlob?.size,
@@ -3160,7 +3161,7 @@ async registerWithCompany(data: {
       'Content-Type': 'application/json'
     };
     try {
-      const tenantId = (this as any).tenantId || (typeof window !== 'undefined' ? localStorage.getItem('tenant_id') : '') || 'demo-tenant';
+      const tenantId = getTenantId();
       const token = (this as any).token || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '');
       const companyId = (typeof window !== 'undefined' ? (localStorage.getItem('company_id') || localStorage.getItem('companyId') || localStorage.getItem('company')) : '') || '';
       if (tenantId) headers['x-tenant-id'] = tenantId;
@@ -3295,7 +3296,7 @@ async registerWithCompany(data: {
     const response = await fetch(`${this.baseUrl}/api/supplier-portal/invoices/${supplierId}/${invoiceId}/pdf`, {
       headers: {
         'Authorization': `Bearer ${this.token}`,
-        'x-tenant-id': this.tenantId || 'demo-tenant'
+        'x-tenant-id': getTenantId()
       }
     });
 

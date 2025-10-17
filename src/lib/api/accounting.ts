@@ -296,11 +296,7 @@ export interface PurchaseOrderLine {
   tenantId?: string
 }
 
-import { config, getCompanyId, getTenantId } from '../config'
-
-// Default company ID for demo purposes
-const DEFAULT_COMPANY_ID = config.demo.companyId
-const DEFAULT_TENANT_ID = config.demo.tenantId
+import { getCompanyId, getTenantId } from '../config'
 
 // NOTE: `apiService` already returns the typed payload (not a {data,..} wrapper),
 // so call it directly and return the result.

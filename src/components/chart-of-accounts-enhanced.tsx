@@ -126,6 +126,7 @@ export function ChartOfAccounts() {
     isActive: true
   })
   const [accountFormError, setAccountFormError] = useState<string | null>(null)
+  const [accountFormLoading, setAccountFormLoading] = useState(false)
   
   const [typeForm, setTypeForm] = useState({
     code: "",
@@ -268,7 +269,7 @@ export function ChartOfAccounts() {
       }
       
       // Type filter
-      if (filterType !== "all" && account.accountTypeId !== filterType) {
+      if (filterType !== "all" && account.typeId !== filterType) {
         return false
       }
       
@@ -407,6 +408,7 @@ export function ChartOfAccounts() {
   const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAccountFormError(null);
+    setAccountFormLoading(true);
     try {
       if (editingAccount) {
         // For updates, only validate if fields are being changed
@@ -478,6 +480,8 @@ export function ChartOfAccounts() {
         variant: "destructive",
         duration: 6000,
       });
+    } finally {
+      setAccountFormLoading(false);
     }
   };
 
@@ -543,7 +547,7 @@ export function ChartOfAccounts() {
       name: account.name,
       code: account.code,
       description: account.description || "",
-      accountTypeId: account.accountTypeId,
+      accountTypeId: account.typeId,
       parentId: account.parentId || undefined,
       isActive: account.isActive
     })
@@ -670,7 +674,7 @@ export function ChartOfAccounts() {
             
             <div className="flex items-center space-x-2">
               <Badge variant="outline">
-                {accountTypes.find(t => t.id === node.accountTypeId)?.name || "Unknown Type"}
+                {accountTypes.find(t => t.id === node.typeId)?.name || "Unknown Type"}
               </Badge>
               
               <DropdownMenu>
@@ -1189,7 +1193,7 @@ export function ChartOfAccounts() {
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-muted-foreground">Type</span>
                               <Badge variant="secondary">
-                                {accountTypes.find(t => t.id === account.accountTypeId)?.name || "Unknown Type"}
+                                {accountTypes.find(t => t.id === account.typeId)?.name || "Unknown Type"}
                               </Badge>
                             </div>
                             {account.description && account.description !== "" && (
@@ -1241,7 +1245,7 @@ export function ChartOfAccounts() {
                         
                         <div className="flex items-center space-x-2">
                           <Badge variant="outline">
-                            {accountTypes.find(t => t.id === account.accountTypeId)?.name || "Unknown Type"}
+                            {accountTypes.find(t => t.id === account.typeId)?.name || "Unknown Type"}
                           </Badge>
                           
                           <DropdownMenu>
@@ -1666,11 +1670,12 @@ export function ChartOfAccounts() {
                     <Label htmlFor="account-active">Account is active</Label>
                   </div>
                   <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setShowAccountDialog(false)}>
+                    <Button type="button" variant="outline" onClick={() => setShowAccountDialog(false)} disabled={accountFormLoading}>
                       Cancel
                     </Button>
-                    <Button type="submit">
-                      {editingAccount ? "Update Account" : "Create Account"}
+                    <Button type="submit" disabled={accountFormLoading}>
+                      {accountFormLoading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+                      {accountFormLoading ? "Saving..." : (editingAccount ? "Update Account" : "Create Account")}
                     </Button>
                   </DialogFooter>
                 </form>

@@ -26,7 +26,7 @@ export const config = {
     jwtSecret: getEnvVar('VITE_JWT_SECRET'),
   },
 
-  // Demo Configuration
+  // Demo Configuration - removed fallbacks
   demo: {
     tenantId: getEnvVar('VITE_DEMO_TENANT_ID'),
     companyId: getEnvVar('VITE_DEMO_COMPANY_ID'),
@@ -49,7 +49,7 @@ export const getApiUrl = (endpoint: string = '') => {
 
 export const getAuthHeaders = () => ({
   'Content-Type': 'application/json',
-  'x-tenant-id': config.demo.tenantId,
+  'x-tenant-id': getTenantId(),
 });
 
 export const getCompanyId = (): string => {
@@ -58,30 +58,45 @@ export const getCompanyId = (): string => {
     const companyId = localStorage.getItem('companyId');
     const company = localStorage.getItem('company');
     
-    console.log('=== getCompanyId() DEBUG ===');
-    console.log('localStorage company_id:', company_id);
-    console.log('localStorage companyId:', companyId);
-    console.log('localStorage company:', company);
+    const result = company_id || companyId || company;
+    if (result) {
+      return result;
+    }
     
-    const result = company_id || companyId || company || config.demo.companyId;
-    console.log('getCompanyId() returning:', result);
-    console.log('getCompanyId() result length:', result.length);
-    
-    return result;
+    throw new Error('Company ID not found in localStorage');
   }
-  return config.demo.companyId;
+  
+  throw new Error('Company ID not available in server environment');
 };
 
 export const getTenantId = (): string => {
   if (typeof window !== 'undefined') {
-    // Use the tenant ID from localStorage to match the JWT token
-    return localStorage.getItem('tenant_id') || config.demo.tenantId;
+    // Only use localStorage tenant_id
+    const tenantId = localStorage.getItem('tenant_id');
+    if (tenantId) {
+      return tenantId;
+    }
+    
+    // If no tenant_id in localStorage, try to extract from auth token
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        if (payload.tenantId) {
+          // Store it in localStorage for future use
+          localStorage.setItem('tenant_id', payload.tenantId);
+          return payload.tenantId;
+        }
+      } catch (error) {
+        // Silent fail - will throw error below
+      }
+    }
+    
+    throw new Error('Tenant ID not found in localStorage or auth token');
   }
-  return config.demo.tenantId;
+  
+  throw new Error('Tenant ID not available in server environment');
 };
-
-// Default company ID constant
-export const DEFAULT_COMPANY_ID = config.demo.companyId;
 
 // Get headers for API requests
 export const getHeaders = () => {
@@ -89,14 +104,8 @@ export const getHeaders = () => {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
     'x-tenant-id': getTenantId(),
-    'x-company-id': getCompanyId() || DEFAULT_COMPANY_ID,
+    'x-company-id': getCompanyId(),
   };
-  
-  console.log('=== getHeaders() DEBUG ===');
-  console.log('Headers being sent:', headers);
-  console.log('Tenant ID:', getTenantId());
-  console.log('Company ID:', getCompanyId() || DEFAULT_COMPANY_ID);
-  console.log('Auth token exists:', !!localStorage.getItem('auth_token'));
   
   return headers;
 };

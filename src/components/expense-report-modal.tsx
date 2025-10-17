@@ -74,7 +74,7 @@ export function ExpenseReportModal({ open, onOpenChange }: ExpenseReportModalPro
                 <SelectValue placeholder="Select company" />
               </SelectTrigger>
               <SelectContent>
-                {((companies as any[]) || []).map((c: any) => (
+                {(Array.isArray(companies) ? companies : []).map((c: any) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>

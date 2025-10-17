@@ -6,6 +6,7 @@ import { Input } from "../components/ui/input"
 import { Badge } from "../components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { Label } from "../components/ui/label"
 import { 
   ShoppingCart, Search, User, CreditCard, DollarSign, 
@@ -58,6 +59,19 @@ interface POSInvoice {
   balanceDue: number
   status: string
   currency?: string
+  lines?: POSInvoiceLine[]
+}
+
+interface POSInvoiceLine {
+  id: string
+  productId: string
+  description: string
+  quantity: number
+  unitPrice: number
+  taxRate: number
+  discountRate: number
+  lineTotal: number
+  product?: POSProduct
 }
 
 export default function POSPage() {
@@ -128,6 +142,13 @@ export default function POSPage() {
   const [showBarcodeDialog, setShowBarcodeDialog] = useState(false)
   const [showInvoiceViewDialog, setShowInvoiceViewDialog] = useState(false)
   const [selectedInvoiceForView, setSelectedInvoiceForView] = useState<POSInvoice | null>(null)
+  
+  // Customer creation state
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<any>(null)
+  const [customerForm, setCustomerForm] = useState<{ name: string; email?: string; currency?: string }>({ name: "", email: "", currency: 'USD' })
+  const [customerSaving, setCustomerSaving] = useState(false)
+  const [customerError, setCustomerError] = useState<string | null>(null)
   const [showReceiptEmailDialog, setShowReceiptEmailDialog] = useState(false)
   const [receiptEmailTo, setReceiptEmailTo] = useState('')
   const [isSendingReceiptEmail, setIsSendingReceiptEmail] = useState(false)
@@ -244,6 +265,9 @@ export default function POSPage() {
   })
   
   const recentInvoices = recentInvoicesResponse || []
+
+  // Use the selected invoice for view
+  const detailedInvoice = selectedInvoiceForView;
 
   // Filter products for POS - show active and inactive products (exclude discontinued)
   const safeProducts = Array.isArray(products) ? products : []
@@ -973,24 +997,34 @@ export default function POSPage() {
       
       // Fallback to backend API if frontend generation fails
       try {
-        await apiService.sendInvoiceEmail(sendEmailInvoiceId, { 
+        const result = await apiService.sendInvoiceEmail(sendEmailInvoiceId, { 
           to: sendEmailTo, 
           attachPdf: true 
         })
         
-        toast({
-          title: "Email Sent",
-          description: `Invoice sent to ${sendEmailTo}`,
-        })
+        // Check if there's a warning about SMTP not being configured
+        if (result?.warning) {
+          toast({
+            title: "Email Queued",
+            description: result.warning,
+            variant: "default"
+          })
+        } else {
+          toast({
+            title: "Email Sent",
+            description: `Invoice sent to ${sendEmailTo}`,
+          })
+        }
         
         setSendEmailOpen(false)
         setSendEmailTo('')
         setSendEmailInvoiceId(null)
-      } catch (backendError) {
-        console.error('Backend email sending also failed:', backendError)
+      } catch (backendError: any) {
+        console.error('Backend email sending failed:', backendError)
+        
         toast({
-          title: "Email Failed",
-          description: "Unable to send invoice email",
+          title: "Email Service Unavailable",
+          description: "Email service is not configured. Please contact your administrator to set up SMTP settings.",
           variant: "destructive"
         })
       }
@@ -1214,7 +1248,11 @@ export default function POSPage() {
                       key={product.id}
                       size="sm"
                       variant="outline"
-                      onClick={() => addToCart(product)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        e.preventDefault()
+                        addToCart(product)
+                      }}
                       className="h-6 text-xs whitespace-nowrap flex-shrink-0"
                     >
                       {product.name}
@@ -1290,7 +1328,11 @@ export default function POSPage() {
                       className={`cursor-pointer hover:shadow-md transition-all duration-150 hover:scale-[1.02] group relative ${
                         isOutOfStock ? 'opacity-60 border-red-200 cursor-not-allowed' : ''
                       }`}
-                      onClick={() => !isOutOfStock && addToCart(product)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        e.preventDefault()
+                        !isOutOfStock && addToCart(product)
+                      }}
                     >
                       <CardContent className="p-2 aspect-square flex flex-col">
                         <div className="flex-1 flex items-center justify-center mb-1">
@@ -1933,11 +1975,9 @@ export default function POSPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  // TODO: Implement customer creation
-                  toast({
-                    title: "Customer Creation",
-                    description: "Customer creation feature coming soon!",
-                  })
+                  setEditingCustomer(null)
+                  setCustomerForm({ name: "", email: "", currency: 'USD' })
+                  setCustomerDialogOpen(true)
                 }}
                 className="h-7 text-xs"
               >
@@ -2073,6 +2113,108 @@ export default function POSPage() {
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Customer Creation Dialog */}
+      <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingCustomer ? 'Edit Customer' : 'Add Customer'}</DialogTitle>
+            <DialogDescription>Enter customer details below.</DialogDescription>
+          </DialogHeader>
+          {customerError && (
+            <div className="text-red-600 text-sm">{customerError}</div>
+          )}
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="cust-name">Name</Label>
+              <Input 
+                id="cust-name" 
+                value={customerForm.name} 
+                onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })} 
+                required 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cust-email">Email</Label>
+              <Input 
+                id="cust-email" 
+                type="email" 
+                value={customerForm.email || ''} 
+                onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cust-currency">Currency</Label>
+              <select 
+                id="cust-currency" 
+                className="w-full border rounded px-2 py-2" 
+                value={customerForm.currency || 'USD'} 
+                onChange={(e) => setCustomerForm({ ...customerForm, currency: e.target.value })}
+              >
+                {['USD','EUR','GBP','KES','NGN'].map(c => (<option key={c} value={c}>{c}</option>))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCustomerDialogOpen(false)} disabled={customerSaving}>
+              Cancel
+            </Button>
+            <Button onClick={async () => {
+              try {
+                setCustomerSaving(true)
+                setCustomerError(null)
+                if (!customerForm.name || customerForm.name.trim() === '') {
+                  throw new Error('Name is required')
+                }
+                if (!selectedCompany) throw new Error('No company selected')
+                if (editingCustomer) {
+                  await apiService.updateCustomer(editingCustomer.id, { 
+                    companyId: selectedCompany, 
+                    name: customerForm.name, 
+                    email: customerForm.email, 
+                    currency: customerForm.currency 
+                  })
+                  toast({ title: 'Customer updated', description: `${customerForm.name}` })
+                } else {
+                  const newCustomer = await apiService.createCustomer({ 
+                    companyId: selectedCompany, 
+                    name: customerForm.name, 
+                    email: customerForm.email, 
+                    currency: customerForm.currency 
+                  })
+                  toast({ title: 'Customer created', description: `${customerForm.name}` })
+                  
+                  // Optimistically update the customer list
+                  queryClient.setQueryData(['pos-customers', selectedCompany], (oldData: any) => {
+                    if (!oldData) return oldData
+                    return {
+                      ...oldData,
+                      items: [...(oldData.items || []), newCustomer]
+                    }
+                  })
+                }
+                await queryClient.invalidateQueries({ queryKey: ["pos-customers", selectedCompany] })
+                // Also invalidate any other customer queries that might exist
+                await queryClient.invalidateQueries({ queryKey: ["customers"] })
+                setCustomerDialogOpen(false)
+                // Close the customer selection dialog and refresh the list
+                setShowCustomerDialog(false)
+              } catch (e: any) {
+                setCustomerError((e as any)?.message || 'Failed to save customer')
+                toast({ 
+                  title: 'Customer save failed', 
+                  description: (e as any)?.message || 'Failed to save customer', 
+                  variant: 'destructive' 
+                })
+              } finally {
+                setCustomerSaving(false)
+              }
+            }} disabled={customerSaving}>
+              {customerSaving ? 'Saving…' : (editingCustomer ? 'Save Changes' : 'Create Customer')}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -2369,7 +2511,9 @@ export default function POSPage() {
               {/* Actions */}
               <div className="flex gap-2">
                 <Button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
                     addToCart(showProductInfo)
                     setShowProductInfo(null)
                   }}
@@ -2634,7 +2778,7 @@ export default function POSPage() {
           setSelectedInvoiceForView(null)
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" style={{ maxWidth: 'calc(100vw - 300px)' }}>
           <DialogHeader className="pb-6 border-b border-slate-200">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
@@ -2649,7 +2793,7 @@ export default function POSPage() {
             </div>
           </DialogHeader>
           
-          {selectedInvoiceForView && (
+          {detailedInvoice && (
             <div className="space-y-6">
               {/* Invoice Header */}
               <div className="grid grid-cols-2 gap-6">
@@ -2658,33 +2802,33 @@ export default function POSPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-slate-600">Invoice Number:</span>
-                      <span className="font-medium">{selectedInvoiceForView.invoiceNumber}</span>
+                      <span className="font-medium">{detailedInvoice.invoiceNumber}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">Issue Date:</span>
-                      <span className="font-medium">{new Date(selectedInvoiceForView.issueDate).toLocaleDateString()}</span>
+                      <span className="font-medium">{new Date(detailedInvoice.issueDate).toLocaleDateString()}</span>
                     </div>
-                    {selectedInvoiceForView.dueDate && (
+                    {detailedInvoice.dueDate && (
                       <div className="flex justify-between">
                         <span className="text-slate-600">Due Date:</span>
-                        <span className="font-medium">{new Date(selectedInvoiceForView.dueDate).toLocaleDateString()}</span>
+                        <span className="font-medium">{new Date(detailedInvoice.dueDate).toLocaleDateString()}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
                       <span className="text-slate-600">Status:</span>
                       <Badge 
                         variant={
-                          selectedInvoiceForView.status === "paid" ? "default" :
-                          selectedInvoiceForView.dueDate && new Date(selectedInvoiceForView.dueDate) < new Date() && selectedInvoiceForView.balanceDue > 0 ? "destructive" : 
+                          detailedInvoice.status === "paid" ? "default" :
+                          detailedInvoice.dueDate && new Date(detailedInvoice.dueDate) < new Date() && detailedInvoice.balanceDue > 0 ? "destructive" : 
                           "secondary"
                         }
                       >
-                        {selectedInvoiceForView.status.charAt(0).toUpperCase() + selectedInvoiceForView.status.slice(1)}
+                        {detailedInvoice.status.charAt(0).toUpperCase() + detailedInvoice.status.slice(1)}
                       </Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">Currency:</span>
-                      <span className="font-medium">{selectedInvoiceForView.currency || 'USD'}</span>
+                      <span className="font-medium">{detailedInvoice.currency || 'USD'}</span>
                     </div>
                   </div>
                 </div>
@@ -2692,7 +2836,7 @@ export default function POSPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-3">Customer Information</h3>
                   {(() => {
-                    const customer = customers.find(c => c.id === selectedInvoiceForView.customerId)
+                    const customer = customers.find(c => c.id === detailedInvoice.customerId)
                     return customer ? (
                       <div className="space-y-2">
                         <div className="flex justify-between">
@@ -2732,15 +2876,15 @@ export default function POSPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-slate-600">Total Amount:</span>
-                      <span className="font-semibold text-lg">{formatCurrency(selectedInvoiceForView.totalAmount)}</span>
+                      <span className="font-semibold text-lg">{formatCurrency(detailedInvoice.totalAmount)}</span>
                     </div>
-                    {selectedInvoiceForView.balanceDue > 0 && (
+                    {detailedInvoice.balanceDue > 0 && (
                       <div className="flex justify-between">
                         <span className="text-slate-600">Balance Due:</span>
-                        <span className="font-semibold text-amber-600">{formatCurrency(selectedInvoiceForView.balanceDue)}</span>
+                        <span className="font-semibold text-amber-600">{formatCurrency(detailedInvoice.balanceDue)}</span>
                       </div>
                     )}
-                    {selectedInvoiceForView.balanceDue === 0 && (
+                    {detailedInvoice.balanceDue === 0 && (
                       <div className="flex justify-between">
                         <span className="text-slate-600">Payment Status:</span>
                         <span className="font-semibold text-green-600">Fully Paid</span>
@@ -2749,13 +2893,13 @@ export default function POSPage() {
                   </div>
                   
                   <div className="space-y-2">
-                    {selectedInvoiceForView.dueDate && (
+                    {detailedInvoice.dueDate && (
                       <div className="flex justify-between">
                         <span className="text-slate-600">Days Until Due:</span>
                         <span className={`font-medium ${
-                          new Date(selectedInvoiceForView.dueDate) < new Date() ? 'text-red-600' : 'text-slate-900'
+                          new Date(detailedInvoice.dueDate) < new Date() ? 'text-red-600' : 'text-slate-900'
                         }`}>
-                          {Math.ceil((new Date(selectedInvoiceForView.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
+                          {Math.ceil((new Date(detailedInvoice.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
                         </span>
                       </div>
                     )}
@@ -2763,11 +2907,159 @@ export default function POSPage() {
                 </div>
               </div>
 
+              {/* Product Line Items */}
+              {detailedInvoice.lines && detailedInvoice.lines.length > 0 ? (
+                <div className="bg-white border border-slate-200 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Products & Services</h3>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Product</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead>Unit Price</TableHead>
+                          <TableHead>Discount</TableHead>
+                          <TableHead>Tax Rate</TableHead>
+                          <TableHead className="text-right">Line Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {detailedInvoice.lines.map((line, index) => (
+                          <TableRow key={line.id || index}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                                  <Package className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div>
+                                  <div className="font-medium text-slate-900">{line.description}</div>
+                                  {line.product && (
+                                    <div className="text-sm text-slate-500">
+                                      SKU: {line.product.sku || 'N/A'} | 
+                                      Category: {line.product.categoryObject?.name || 'Uncategorized'}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{Number(line.quantity) || 0}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{formatCurrency(Number(line.unitPrice) || 0)}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {Number(line.discountRate) > 0 ? (
+                                  <span className="text-green-600 font-medium">
+                                    {Number(line.discountRate)}%
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400">No discount</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {Number(line.taxRate) > 0 ? (
+                                  <span className="text-blue-600 font-medium">
+                                    {Number(line.taxRate)}%
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400">No tax</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="font-semibold text-slate-900">
+                                {formatCurrency(line.lineTotal || (Number(line.quantity) * Number(line.unitPrice)))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  
+                  {/* Line Items Summary */}
+                  <div className="mt-4 pt-4 border-t border-slate-200">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Subtotal:</span>
+                          <span className="font-medium">
+                            {formatCurrency(detailedInvoice.lines.reduce((sum, line) => 
+                              sum + (Number(line.quantity) * Number(line.unitPrice)), 0
+                            ))}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Total Discount:</span>
+                          <span className="font-medium text-green-600">
+                            -{formatCurrency(detailedInvoice.lines.reduce((sum, line) => {
+                              const discountRate = Number(line.discountRate) || 0;
+                              const lineTotal = Number(line.quantity) * Number(line.unitPrice);
+                              return sum + (lineTotal * (discountRate / 100));
+                            }, 0))}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Total Tax:</span>
+                          <span className="font-medium text-blue-600">
+                            {formatCurrency(detailedInvoice.lines.reduce((sum, line) => {
+                              const taxRate = Number(line.taxRate) || 0;
+                              const lineTotal = Number(line.quantity) * Number(line.unitPrice);
+                              return sum + (lineTotal * (taxRate / 100));
+                            }, 0))}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Items Count:</span>
+                          <span className="font-medium">
+                            {detailedInvoice.lines.length} items
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Total Quantity:</span>
+                          <span className="font-medium">
+                            {detailedInvoice.lines.reduce((sum, line) => sum + Number(line.quantity), 0)} units
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-semibold text-lg pt-2 border-t border-slate-200">
+                          <span className="text-slate-900">Grand Total:</span>
+                          <span className="text-slate-900">{formatCurrency(detailedInvoice.totalAmount)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Package className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900">Product Details</h3>
+                      <p className="text-blue-700 text-sm">
+                        This invoice was created via POS system. Product line items are stored in the invoice but may not be fully loaded in this view. 
+                        For complete product details, please use the "Open in Sales" button below.
+                      </p>
+                      <div className="mt-2 text-xs text-blue-600">
+                        Debug: Invoice has {detailedInvoice.lines?.length || 0} line items
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t border-slate-200">
                 <Button
                   variant="outline"
-                  onClick={() => handleDownloadInvoicePdf(selectedInvoiceForView.id, selectedInvoiceForView.invoiceNumber)}
+                  onClick={() => handleDownloadInvoicePdf(detailedInvoice.id, detailedInvoice.invoiceNumber)}
                   className="flex-1"
                 >
                   <Download className="w-4 h-4 mr-2" />
@@ -2777,8 +3069,8 @@ export default function POSPage() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    const customer = customers.find(c => c.id === selectedInvoiceForView.customerId)
-                    setSendEmailInvoiceId(selectedInvoiceForView.id)
+                    const customer = customers.find(c => c.id === detailedInvoice.customerId)
+                    setSendEmailInvoiceId(detailedInvoice.id)
                     setSendEmailTo(customer?.email || '')
                     setSendEmailOpen(true)
                     setShowInvoiceViewDialog(false)
@@ -2792,7 +3084,7 @@ export default function POSPage() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    window.open(`/sales?invoice=${selectedInvoiceForView.id}`, '_blank')
+                    window.open(`/sales?invoice=${detailedInvoice.id}`, '_blank')
                   }}
                   className="flex-1"
                 >
