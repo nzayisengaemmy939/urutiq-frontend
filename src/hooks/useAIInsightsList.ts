@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCompanyId, getTenantId } from '../lib/config';
+import { getCompanyId, getTenantId, getApiUrl } from '../lib/config';
 
 export interface AIInsight {
   id: string;
@@ -66,7 +66,7 @@ export function useAIInsightsList() {
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/ai/insights?companyId=${companyId}`,
+        `${getApiUrl()}/api/ai/insights?companyId=${companyId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

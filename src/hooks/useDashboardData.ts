@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/auth-context';
-import { getTenantId } from '../lib/config';
+import { getTenantId, getApiUrl } from '../lib/config';
 
 interface DashboardMetrics {
   totalRevenue: number;
@@ -99,7 +99,7 @@ export function useDashboardData(companyId?: string, period: number = 30): UseDa
         throw new Error('No authentication token found');
       }
 
-      const apiUrl = `${import.meta.env.VITE_API_URL}/api/dashboard?companyId=${companyId}&period=${period}`;
+      const apiUrl = `${getApiUrl()}/api/dashboard?companyId=${companyId}&period=${period}`;
       console.log('Making API call to:', apiUrl);
 
       const response = await fetch(apiUrl, {

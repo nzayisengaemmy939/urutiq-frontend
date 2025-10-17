@@ -11,7 +11,7 @@ import { Textarea } from '../components/ui/textarea'
 import { Checkbox } from '../components/ui/checkbox'
 import { Calculator, FileText, Clock, TrendingUp, DollarSign, MapPin, Building, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import { config } from '../lib/config'
+import { config, getApiUrl } from '../lib/config'
 import { apiService } from '../lib/api'
 
 interface Company {
@@ -244,7 +244,7 @@ export default function TaxCalculationPage() {
     if (!selectedCompany) return
     try {
       setLoading(true)
-      const API = import.meta.env.VITE_API_URL || ''
+      const API = getApiUrl()
       const response = await fetch(`${API}/api/tax-calculation/${selectedCompany}/jurisdictions/seed`, {
         method: 'POST',
         headers: {
@@ -523,7 +523,7 @@ export default function TaxCalculationPage() {
 
   const markReturnFiled = async (id: string) => {
     try {
-      const API = import.meta.env.VITE_API_URL || ''
+      const API = getApiUrl()
       const resp = await fetch(`${API}/api/tax-calculation/${selectedCompany}/returns/${id}/file`, {
         method: 'POST',
         headers: {
