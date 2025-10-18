@@ -183,6 +183,13 @@ const navigationItems: NavigationItem[] = [
     favorite: true
   },
   { 
+    name: "Fixed Assets", 
+    icon: Building2, 
+    href: "/dashboard/fixed-assets",
+    badge: "Assets",
+    favorite: true
+  },
+  { 
     name: "Journal Entries Hub", 
     icon: BookOpen, 
     href: "/dashboard/journal-hub",

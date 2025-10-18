@@ -50,7 +50,7 @@ export const MoonLoader: React.FC<MoonLoaderProps> = ({
 }) => {
   const sizeClass = sizeClasses[size];
   const dotSizeClass = dotSizeClasses[size];
-  const colorClass = colorClasses[color];
+  const colorClass = colorClasses[color] || colorClasses.teal; // Fallback to teal if invalid color
 
   return (
     <div className={`relative ${sizeClass} ${className}`}>

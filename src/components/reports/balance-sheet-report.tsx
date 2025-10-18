@@ -17,6 +17,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getApiBaseUrl } from '@/lib/config';
 
 interface BalanceSheetAccount {
   id: string;
@@ -68,14 +69,20 @@ export function BalanceSheetReport({ asOfDate, loading, setLoading }: BalanceShe
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Get dynamic company ID and tenant ID
+      const companyId = localStorage.getItem('company_id') || localStorage.getItem('companyId') || 'seed-company-1';
+      const tenantId = localStorage.getItem('tenant_id') || 'tenant_demo';
+      
       const params = new URLSearchParams({
+        companyId: companyId,
         asOfDate: asOfDate
       });
 
-      const response = await fetch(`/api/accounting-reports/balance-sheet?${params}`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/accounting-reports/balance-sheet?${params}`, {
         headers: {
-          'x-tenant-id': 'tenant_demo',
-          'x-company-id': 'seed-company-1'
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'x-tenant-id': tenantId,
+          'x-company-id': companyId
         }
       });
 
